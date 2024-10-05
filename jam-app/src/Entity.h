@@ -11,6 +11,9 @@ struct Tilemap {
 
     void Create(int16 map_x, int16 map_y);
     void Destroy();
+
+    void Fill(uint8 cell_value);
+    void Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_value);
     
     Tilemap();
     ~Tilemap();
@@ -30,7 +33,7 @@ struct World {
 
     void Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y);
 
-    int16 grid_x, grid_y;
+    int16 grid_size_x, grid_size_y;
     Tilemap grid;
 
     laml::Vec2 Get_Screen_Pos(laml::Vec2 world_pos);

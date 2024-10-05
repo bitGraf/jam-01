@@ -90,7 +90,7 @@ void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tile
 
         for (int y = 0; y < num_y; y++) {
             const uint8 cell = col_data[y];
-            dst_rect.y = (screen_pos.y - tile_height*y) - tile_height/2;
+            dst_rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
             if (cell) {
                 Sprite_Frame frame = tilesheet->Get_Sprite_Frame(cell);
@@ -117,7 +117,7 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
 
         for (int y = 0; y < num_y; y++) {
             const uint8 cell = col_data[y];
-            rect.y = (screen_pos.y - tile_height*y) - tile_height/2;
+            rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
             snprintf(buffer, 16, "%d", cell);
             Render_Text(renderer, g_small_font, color, rect, buffer);

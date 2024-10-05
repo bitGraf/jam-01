@@ -64,6 +64,7 @@ struct World_State : public Game_State {
 private:
     // World
     World world;
+    int16 ground_level;
 
     // Player Sprite
     Entity player;

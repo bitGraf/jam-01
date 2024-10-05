@@ -16,15 +16,21 @@ World_State::World_State(const char* filename) {
     log_trace("World_State::World_State(%s)", filename);
     level_name = filename;
 
+    ground_level = 8;
+
     // Initialize world origin
     world.origin = laml::Vec2(0.0, g_window_height);
-    world.Init_Grid(128, 32, 32, 32);
-    world.grid[1][3] = 5;
+    world.Init_Grid(25, 60, 32, 32);
+    world.cam_world_pos.x = -16;
+    world.cam_world_pos.y = g_window_height - 16;
+
+    world.grid.Fill(1);
+    world.grid.Fill(1, 1, 23, ground_level, 0);
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
-    player.world_x = 0;
-    player.world_y = 0;
+    player.world_x = 6;
+    player.world_y = ground_level;
     player.angle = 0.0;
 }
 
@@ -38,25 +44,31 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
     // Draw sprite
     player.sprite.Update(dt);
-    real32 stick_x, stick_y;
+    real32 stick_x = 0.0, stick_y = 0.0;
     
-    stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
-    stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
+    //stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
+    //stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
     //player.world_x += stick_x * (1.0 * dt);
     //player.world_y += stick_y * (1.0 * dt);
+
     real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
     real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
     player.angle += (r_trigger - l_trigger) * 360.0*dt;
     player.angle = laml::map(player.angle, 0.0, 360.0);
 
-    stick_x = g_game.GetAxes()->axes[Axis_Right_Horiz];
-    stick_y = g_game.GetAxes()->axes[Axis_Right_Vert];
-    world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (250.0 * dt);
+    stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
+    stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
+    world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (500.0 * dt);
+    if (world.cam_world_pos.y < (g_window_height - 16)) {
+        world.cam_world_pos.y = g_window_height - 16;
+    }
+
+    int32 depth = player.world_y - ground_level;
 
 
     //////////// Render
     // tilemap
-    Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
+    Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y);
     //Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
 
     // origin
@@ -93,6 +105,9 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     rect.y += g_font_size_small;
     snprintf(buffer, 256, "Rotation: %.1f", player.angle);
     Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "Depth: %d", depth);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
 }
 
 bool World_State::On_Action_Event(Action_Event action) {
@@ -116,10 +131,10 @@ bool World_State::On_Action_Event(Action_Event action) {
         this->player.world_x--;
         return true;
     } else if (action.action == Action_Up && action.pressed) {
-        this->player.world_y++;
+        this->player.world_y--;
         return true;
     } else if (action.action == Action_Down && action.pressed) {
-        this->player.world_y--;
+        this->player.world_y++;
         return true;
     }
 
