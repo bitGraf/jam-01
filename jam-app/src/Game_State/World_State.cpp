@@ -12,6 +12,15 @@ extern Game_App g_game;
 extern int32 g_window_width;
 extern int32 g_window_height;
 
+enum Move_Reason {
+    MOVE_NOT_POSSIBLE = 0,
+    MOVE_POSSIBLE = 1,
+    MOVE_AND_BREAK = 2
+};
+
+uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y, const World& world);
+uint8 Break_Block(int16 world_x, int16 world_y, World& world);
+
 World_State::World_State(const char* filename) {
     log_trace("World_State::World_State(%s)", filename);
     level_name = filename;
@@ -26,6 +35,8 @@ World_State::World_State(const char* filename) {
 
     world.grid.Fill(1);
     world.grid.Fill(1, 1, 23, ground_level, 0);
+    world.grid.Fill(1, ground_level+1, 23, world.grid.map_height - ground_level - 2, 2);
+    world.grid.Fill(15, ground_level-4, 8, 5, 1);
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
@@ -124,19 +135,64 @@ bool World_State::On_Action_Event(Action_Event action) {
     } else if (action.action == Action_B && action.pressed) {
         this->player.sprite.Set_Sequence(2, 0);
         return true;
-    } else if (action.action == Action_Right && action.pressed) {
-        this->player.world_x++;
-        return true;
+    }
+    
+    int16 move_x = 0, move_y = 0;
+    if (action.action == Action_Right && action.pressed) {
+        move_x = 1;
     } else if (action.action == Action_Left && action.pressed) {
-        this->player.world_x--;
-        return true;
+        move_x = -1;
     } else if (action.action == Action_Up && action.pressed) {
-        this->player.world_y--;
-        return true;
+        move_y = -1;
     } else if (action.action == Action_Down && action.pressed) {
-        this->player.world_y++;
+        move_y = 1;
+    }
+
+    if (move_x || move_y) {
+        uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y, world);
+        switch (reason) {
+            case MOVE_POSSIBLE: {
+                this->player.world_x += move_x;
+                this->player.world_y += move_y;
+            } break;
+
+            case MOVE_AND_BREAK: {
+                this->player.world_x += move_x;
+                this->player.world_y += move_y;
+
+                Break_Block(player.world_x, player.world_y, world);
+            } break;
+        }
+
         return true;
     }
 
     return false;
+}
+
+uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y, const World& world) {
+    int16 end_x = start_x + move_x;
+    int16 end_y = start_y + move_y;
+
+    uint8 start_cell = world.grid[start_x][start_y];
+    uint8 end_cell = world.grid[end_x][end_y];
+
+    if (end_cell == 0) {
+        return MOVE_POSSIBLE;
+    }
+
+    if (end_cell == 2) {
+        return MOVE_AND_BREAK;
+    }
+
+    return MOVE_NOT_POSSIBLE;
+}
+
+uint8 Break_Block(int16 world_x, int16 world_y, World& world) {
+    uint8 cell = world.grid[world_x][world_y];
+    log_debug("destroy cell: %d", cell);
+
+    world.grid[world_x][world_y] = 0;
+
+    return 0;
 }
