@@ -1,5 +1,5 @@
 # Set name of this target
-set(target_name "testbed-app")
+set(target_name "jam-app")
 
 message(----[${target_name}]-----------------------------------------)
 

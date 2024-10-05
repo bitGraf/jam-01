@@ -17,5 +17,5 @@ endif ()
 
 add_subdirectory(deps/math_lib)
 add_subdirectory(utils)
-add_subdirectory(testbed-app)
+add_subdirectory(jam-app)
 message(----------------------------------------------------------)

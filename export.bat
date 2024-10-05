@@ -2,7 +2,7 @@
 
 echo Exporting...
 
-set name="testbed-app"
+set name="jam-app"
 set src_dir=.\bin\Debug
 set dst_dir=.\export\%name%
 

@@ -4,7 +4,7 @@
             "name": "My C++ Launch (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/bin/Debug/testbed-app.exe",
+            "program": "${workspaceRoot}/bin/Debug/jam-app.exe",
             "cwd": "${workspaceRoot}/run_tree",
             //"symbolSearchPath": "C:\\Symbols;C:\\SymbolDir2",
             "externalConsole": false,
