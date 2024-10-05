@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "My C++ Launch (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/Debug/testbed-app.exe",
+            "cwd": "${workspaceRoot}/run_tree",
+            //"symbolSearchPath": "C:\\Symbols;C:\\SymbolDir2",
+            "externalConsole": false,
+            "logging": {
+                "moduleLoad": false,
+                "trace": true
+            },
+            "internalConsoleOptions": "openOnSessionStart"
+            //"visualizerFile": "${workspaceFolder}/my.natvis",
+            //"showDisplayString": true
+        }
+    ]
+}
