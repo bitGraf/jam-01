@@ -26,6 +26,8 @@ struct World {
     Sprite sprite_origin;
     Sprite sprite_cam;
 
+    Indexed_Tilesheet tilesheet;
+
     void Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y);
 
     int16 grid_x, grid_y;

@@ -282,6 +282,11 @@ bool Indexed_Tilesheet::Load_Tilesheet(SDL_Renderer* renderer, const char* filen
         log_warn("Sheet is %dx%d, does not divide nicely into %dx%d blocks.", sheet_w, sheet_h, tile_w, tile_h);
     }
 
+    num_tiles_x = num_x;
+    num_tiles_y = num_y;
+    tile_x = tile_w;
+    tile_y = tile_h;
+
     return true;
 }
 
@@ -293,9 +298,22 @@ void Indexed_Tilesheet::Destroy() {
 }
 
 Sprite_Frame Indexed_Tilesheet::Get_Sprite_Frame(int16 index) const {
-    int16 index_x = index;
-    int16 index_y = index;
+    int16 num_tiles = (this->num_tiles_x * this->num_tiles_y) - 1;
+    if (index < 0 || index >= num_tiles) {
+        log_error("invalid index! [%d]", index);
+        return Sprite_Frame();
+    }
 
-    Sprite_Frame frame = {0};
+    int16 index_y = index/this->num_tiles_y;
+    int16 index_x = index - (index_y*this->num_tiles_x);
+
+    Sprite_Frame frame;
+    frame.x_index = index_x;
+    frame.y_index = index_y;
+    frame.w = this->tile_x;
+    frame.h = this->tile_y;
+    frame.x = index_x * frame.w;
+    frame.y = index_y * frame.h;
+
     return frame;
 }

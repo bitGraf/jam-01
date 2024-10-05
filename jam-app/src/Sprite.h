@@ -57,4 +57,6 @@ struct Indexed_Tilesheet {
     Sprite_Frame Get_Sprite_Frame(int16 index) const;
 
     SDL_Texture* texture;
+    int16 num_tiles_x, num_tiles_y;
+    int16 tile_x, tile_y;
 };

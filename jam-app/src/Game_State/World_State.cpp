@@ -56,7 +56,8 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
     //////////// Render
     // tilemap
-    Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
+    Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
+    //Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
 
     // origin
     Draw_Sprite(renderer, world.sprite_origin, world.Get_Origin_Screen_Pos(), 0.0);

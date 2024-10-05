@@ -34,7 +34,12 @@ void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 
     grid.Create(num_cells_x, num_cells_y);
     grid_x = cell_x;
     grid_y = cell_y;
+
+    tilesheet.Load_Tilesheet(g_game.GetRenderer(), "data/sprite_base.png", 32, 32);
 }
+
+
+
 
 // Tilemap
 

@@ -75,6 +75,33 @@ void Draw_Sprite(SDL_Renderer* renderer, const Sprite& sprite, laml::Vec2 screen
     SDL_RenderCopyEx(renderer, sprite.texture, &src_rect, &dst_rect, angle, &rot_center, SDL_FLIP_NONE);
 }
 
+void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tilesheet* tilesheet, laml::Vec2 screen_pos, int16 tile_width, int16 tile_height) {
+    int num_x = map->map_width;
+    int num_y = map->map_height;
+
+    char buffer[16] = {0};
+    SDL_Rect dst_rect = {0,0,tilesheet->tile_x, tilesheet->tile_y};
+    SDL_Color color = { 255, 255, 255, 255 };
+    SDL_Color back_color = { 0, 0, 0, 255 };
+
+    for (int x = 0; x < num_x; x++) {
+        const uint8* col_data = map->operator[](x);
+        dst_rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
+
+        for (int y = 0; y < num_y; y++) {
+            const uint8 cell = col_data[y];
+            dst_rect.y = (screen_pos.y - tile_height*y) - tile_height/2;
+
+            if (cell) {
+                Sprite_Frame frame = tilesheet->Get_Sprite_Frame(cell);
+
+                SDL_Rect src_rect = {frame.x, frame.y, frame.w, frame.h};
+                SDL_RenderCopy(renderer, tilesheet->texture, &src_rect, &dst_rect);
+            }
+        }
+    }
+}
+
 void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 screen_pos, int16 tile_width, int16 tile_height) {
     int num_x = map->map_width;
     int num_y = map->map_height;
