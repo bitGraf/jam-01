@@ -70,8 +70,10 @@ private:
     World world;
     int16 ground_level;
 
-    // Player Sprite
+    // Player
     Entity player;
+
+    // Hunger
     real32 hunger;
     real32 hunger_rate;
     real32 move_cost;

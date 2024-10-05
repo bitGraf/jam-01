@@ -14,10 +14,12 @@ Game_App g_game;
 TTF_Font* g_small_font;
 TTF_Font* g_medium_font;
 TTF_Font* g_large_font;
+TTF_Font* g_huge_font;
 
 int32 g_font_size_small = 24;
 int32 g_font_size_medium = 36;
 int32 g_font_size_large = 48;
+int32 g_font_size_huge = 72;
 
 int32 g_window_width = 800;
 int32 g_window_height = 600;
@@ -157,6 +159,7 @@ bool Game_App::Load_Assets() {
     g_small_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_small);
     g_medium_font = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_medium);
     g_large_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_large);
+    g_huge_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_huge);
 
     log_info("All assets loaded!");
 
@@ -469,7 +472,7 @@ SDL_Joystick* Game_App::Update_Joysticks() {
 
 void Game_App::On_Action_Event(Action_Event event) {
     if (event.pressed) {
-        log_debug("Action_Event: %s: %s", Action_Event_String(event.action), event.pressed ? "Pressed" : "Released");
+        //log_debug("Action_Event: %s: %s", Action_Event_String(event.action), event.pressed ? "Pressed" : "Released");
 
         if (this->game_state.top()->On_Action_Event(event)) {
             return;
