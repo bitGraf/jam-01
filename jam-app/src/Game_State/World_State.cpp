@@ -256,6 +256,11 @@ bool World_State::On_Action_Event(Action_Event action) {
 }
 
 uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y) {
+    if ((abs(move_x) + abs(move_y)) > 1) {
+        log_error("Move_Entity() should only move 1 block at a time");
+        return MOVE_NOT_POSSIBLE;
+    }
+
     int16 end_x = start_x + move_x;
     int16 end_y = start_y + move_y;
 
@@ -263,7 +268,34 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     uint8 end_cell = world.grid[end_x][end_y];
 
     if (end_cell == 0) {
+        // check if there are walls to support us if going upward
+        if (move_y < 0) {
+            uint8 left_wall  = world.grid[start_x-1][end_y];
+            uint8 right_wall = world.grid[start_x+1][end_y];
+
+            if (end_y == ground_level) return MOVE_POSSIBLE;
+
+            if (left_wall != 0 || right_wall != 0) {
+                // has support
+                return MOVE_POSSIBLE;
+            } else {
+                uint8 left_floor  = world.grid[start_x-1][start_y];
+                uint8 right_floor = world.grid[start_x+1][start_y];
+
+                if (left_floor != 0 || right_floor != 0) {
+                    return MOVE_POSSIBLE;
+                }
+
+                return MOVE_NOT_POSSIBLE;
+            }
+        }
+
         return MOVE_POSSIBLE;
+    }
+
+    // cannot dig upwards
+    if (move_y < 0) {
+        return MOVE_NOT_POSSIBLE;
     }
 
     if (end_cell == 2) {
