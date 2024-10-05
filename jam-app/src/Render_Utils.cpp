@@ -6,6 +6,10 @@
 #include <stdio.h>  // for vsnprintf
 #include <stdarg.h> // for va_args
 
+extern TTF_Font* g_small_font;
+extern int32 g_font_size_small;
+const int32 offset = 2;
+
 void Render_Text(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, SDL_Rect dest, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -69,4 +73,27 @@ void Draw_Sprite(SDL_Renderer* renderer, const Sprite& sprite, laml::Vec2 screen
     //SDL_Point rot_center = { (int32)screen_pos.x, (int32)screen_pos.y};
     SDL_Point rot_center = { (int32)sprite.anchor.x, (int32)sprite.anchor.y};
     SDL_RenderCopyEx(renderer, sprite.texture, &src_rect, &dst_rect, angle, &rot_center, SDL_FLIP_NONE);
+}
+
+void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 screen_pos, int16 tile_width, int16 tile_height) {
+    int num_x = map->map_width;
+    int num_y = map->map_height;
+
+    char buffer[16] = {0};
+    SDL_Rect rect;
+    SDL_Color color = { 255, 255, 255, 255 };
+    SDL_Color back_color = { 0, 0, 0, 255 };
+
+    for (int y = 0; y < num_y; y++) {
+        const uint8* row_data = map->map[y];
+        rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
+
+        for (int x = 0; x < num_x; x++) {
+            const uint8 cell = row_data[x];
+            rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
+
+            snprintf(buffer, 16, "%d", cell);
+            Render_Text(renderer, g_small_font, color, rect, buffer);
+        }
+    }
 }

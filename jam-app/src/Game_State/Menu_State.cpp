@@ -72,7 +72,7 @@ bool Menu_State::On_Action_Event(Action_Event action) {
 
         switch (current_menu_item) {
             case 0: { // Play
-                Game_State* play = new Level_State("data/levels/level_1.json");
+                Game_State* play = new World_State("data/levels/level_1.json");
                 g_game.Push_New_State(play);
                 break;
             };

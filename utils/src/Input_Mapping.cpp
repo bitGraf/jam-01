@@ -80,10 +80,10 @@ Action_Event Action_Event_From_Key_Event(int32 key_code, bool pressed) {
         case SDLK_a: event.action = Action_Left; break;
         case SDLK_w: event.action = Action_Up; break;
 
-        case SDLK_DOWN: event.action = Action_Down; break;
-        case SDLK_RIGHT: event.action = Action_Right; break;
-        case SDLK_LEFT: event.action = Action_Left; break;
-        case SDLK_UP: event.action = Action_Up; break;
+        //case SDLK_DOWN: event.action = Action_Down; break;
+        //case SDLK_RIGHT: event.action = Action_Right; break;
+        //case SDLK_LEFT: event.action = Action_Left; break;
+        //case SDLK_UP: event.action = Action_Up; break;
 
         case SDLK_q: event.action = Action_LB; break;
         case SDLK_e: event.action = Action_RB; break;

@@ -54,9 +54,9 @@ private:
     std::vector<std::string> menu_options;
 };
 
-struct Level_State : public Game_State {
-    Level_State(const char* filename);
-    virtual ~Level_State() override;
+struct World_State : public Game_State {
+    World_State(const char* filename);
+    virtual ~World_State() override;
 
     virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
     virtual bool On_Action_Event(Action_Event action) override;

@@ -12,8 +12,8 @@ extern Game_App g_game;
 extern int32 g_window_width;
 extern int32 g_window_height;
 
-Level_State::Level_State(const char* filename) {
-    log_trace("Level_State::Level_State(%s)", filename);
+World_State::World_State(const char* filename) {
+    log_trace("World_State::World_State(%s)", filename);
     level_name = filename;
 
     // Initialize world origin
@@ -21,36 +21,25 @@ Level_State::Level_State(const char* filename) {
     world.cam_world_pos = laml::Vec2(0.0, 0.0);
     world.sprite_origin.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus.png", 32, 32, 16, 16);
     world.sprite_cam.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus2.png", 32, 32, 16, 16);
+    world.grid_x = 32;
+    world.grid_y = 32;
+    world.grid.Create(8, 8);
+    world.grid.map[1][3] = 5;
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
-    player.world_pos = laml::Vec2(0.0, 0.0);
+    player.world_x = 0;
+    player.world_y = 0;
     player.angle = 0.0;
 }
 
-Level_State::~Level_State() {
-    log_trace("Level_State::~Level_State(%s)", level_name.c_str());
+World_State::~World_State() {
+    log_trace("World_State::~World_State(%s)", level_name.c_str());
 }
 
-void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
+void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_SetRenderDrawColor(renderer, 120, 90, 255, 255);
     SDL_RenderClear(renderer);
-
-
-    SDL_Rect rect = { 4, g_window_height-g_font_size_small, 0, 0 };
-
-    SDL_Color color = { 255, 255, 255, 255 };
-    SDL_Color back_color = { 0, 0, 0, 255 };
-
-    Render_Text(renderer, g_small_font, back_color, rect, level_name.c_str());
-
-    rect.x -= offset;
-    rect.y -= offset;
-
-    //render selected text differently
-    Render_Text(renderer, g_small_font, color, rect, level_name.c_str());
-
-    rect.y += g_font_size_small;
 
     // Draw sprite
     player.sprite.Update(dt);
@@ -58,7 +47,8 @@ void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     
     stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
     stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
-    player.world_pos = player.world_pos + laml::Vec2(stick_x, stick_y) * (250.0 * dt);
+    //player.world_x += stick_x * (1.0 * dt);
+    //player.world_y += stick_y * (1.0 * dt);
     real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
     real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
     player.angle += (r_trigger - l_trigger) * 360.0*dt;
@@ -70,6 +60,9 @@ void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
 
     //////////// Render
+    // tilemap
+    Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
+
     // origin
     Draw_Sprite(renderer, world.sprite_origin, world.Get_Origin_Screen_Pos(), 0.0);
 
@@ -77,12 +70,15 @@ void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     Draw_Sprite(renderer, world.sprite_cam, world.Get_Screen_Pos(world.cam_world_pos), 0.0);
 
     // sprite
-    laml::Vec2 screen_pos = world.Get_Screen_Pos(player.world_pos);
+    laml::Vec2 world_pos = world.Get_World_Pos(player.world_x, player.world_y);
+    laml::Vec2 screen_pos = world.Get_Screen_Pos(player.world_x, player.world_y);
     Draw_Sprite(renderer, player.sprite, screen_pos, player.angle);
 
     // world info
+    SDL_Rect rect = { 4, 100, 0, 0 };
+    SDL_Color color = { 255, 255, 255, 255 };
+    SDL_Color back_color = { 0, 0, 0, 255 };
     char buffer[256];
-    rect.y = 100;
 
     snprintf(buffer, 256, "Origin: <%.0f, %.0f>", world.origin.x, world.origin.y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
@@ -90,7 +86,10 @@ void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "Camera: <%.0f, %.0f>", world.cam_world_pos.x, world.cam_world_pos.y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-    snprintf(buffer, 256, "World: <%.0f, %.0f>", player.world_pos.x, player.world_pos.y);
+    snprintf(buffer, 256, "iWorld: <%d, %d>", player.world_x, player.world_y);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "World: <%.0f, %.0f>", world_pos.x, world_pos.y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
     snprintf(buffer, 256, "Screen: <%.0f, %.0f>", screen_pos.x, screen_pos.y);
@@ -100,7 +99,7 @@ void Level_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     Render_Text(renderer, g_small_font, color, rect, buffer);
 }
 
-bool Level_State::On_Action_Event(Action_Event action) {
+bool World_State::On_Action_Event(Action_Event action) {
     if (action.action == Action_Pause && action.pressed) {
         Game_State* pause = new Pause_State();
         g_game.Push_New_State(pause);
@@ -114,6 +113,19 @@ bool Level_State::On_Action_Event(Action_Event action) {
     } else if (action.action == Action_B && action.pressed) {
         this->player.sprite.Set_Sequence(2, 0);
         return true;
+    } else if (action.action == Action_Right && action.pressed) {
+        this->player.world_x++;
+        return true;
+    } else if (action.action == Action_Left && action.pressed) {
+        this->player.world_x--;
+        return true;
+    } else if (action.action == Action_Up && action.pressed) {
+        this->player.world_y++;
+        return true;
+    } else if (action.action == Action_Down && action.pressed) {
+        this->player.world_y--;
+        return true;
     }
+
     return false;
 }

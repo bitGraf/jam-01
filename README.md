@@ -1,4 +1,4 @@
-# game_quickstart
-quickstart repo/template for gamedev
+# AGDQ Game Jam #1
+Made over the course of 12 hours.
 
-hehe :3
+Randomly Chosen Theme:  **Descendant Bug**

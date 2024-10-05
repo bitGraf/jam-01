@@ -40,5 +40,6 @@ rem copy ..\VC_redist.x64.exe %dst_dir%\redist
 echo Zipping files...
 if EXIST %dst_dir%.zip del %dst_dir%.zip
 "C:\Program Files\7-Zip\7z.exe" a %dst_dir%.zip %dst_dir%
+RD /S /Q "%dst_dir%"
 
 echo Done.
