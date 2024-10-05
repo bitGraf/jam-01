@@ -21,6 +21,7 @@ int32 g_font_size_large = 48;
 
 int32 g_window_width = 800;
 int32 g_window_height = 600;
+uint32 g_window_pixel_format = 0;
 
 // local vars
 static const real32 deadzone = 0.5;
@@ -65,6 +66,7 @@ bool Game_App::Init() {
 
     // Create our window
 	window = SDL_CreateWindow( window_name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, g_window_width, g_window_height, SDL_WINDOW_SHOWN );
+    g_window_pixel_format = SDL_GetWindowPixelFormat(window);
 
 	// Make sure creating the window succeeded
 	if ( !window ) {

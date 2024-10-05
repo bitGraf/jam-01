@@ -62,12 +62,26 @@ struct World_State : public Game_State {
     virtual bool On_Action_Event(Action_Event action) override;
 
 private:
+    uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
+    uint8 Break_Block(int16 world_x, int16 world_y);
+
+private:
     // World
     World world;
     int16 ground_level;
 
     // Player Sprite
     Entity player;
+    real32 hunger;
+    real32 hunger_rate;
+    real32 move_cost;
+    real32 break_cost;
+    int16 carrying_food;
+    int16 colony_food;
+    int16 colony_size;
+    real32 colony_hunger;
+    real32 field_eat_ratio;
+    real32 colony_eat_ratio;
 
     // debug
     std::string level_name;

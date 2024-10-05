@@ -10,6 +10,8 @@ extern TTF_Font* g_small_font;
 extern int32 g_font_size_small;
 const int32 offset = 2;
 
+extern uint32 g_window_pixel_format;
+
 void Render_Text(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, SDL_Rect dest, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -75,15 +77,22 @@ void Draw_Sprite(SDL_Renderer* renderer, const Sprite& sprite, laml::Vec2 screen
     SDL_RenderCopyEx(renderer, sprite.texture, &src_rect, &dst_rect, angle, &rot_center, SDL_FLIP_NONE);
 }
 
-void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tilesheet* tilesheet, laml::Vec2 screen_pos, int16 tile_width, int16 tile_height) {
+void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tilesheet* tilesheet, 
+                  laml::Vec2 screen_pos, int16 tile_width, int16 tile_height, int16 ground_level) {
     int num_x = map->map_width;
     int num_y = map->map_height;
 
     char buffer[16] = {0};
     SDL_Rect dst_rect = {0,0,tilesheet->tile_x, tilesheet->tile_y};
-    SDL_Color color = { 255, 255, 255, 255 };
-    SDL_Color back_color = { 0, 0, 0, 255 };
 
+    uint8 r_start = 86, g_start = 37, b_start = 0, a_start = 0;
+    uint8 r_end   = 86, g_end   = 37, b_end   = 0, a_end   = 200;
+    int16 start_depth = 10;
+    int16 end_depth = 45;
+
+    SDL_PixelFormat* pf = SDL_AllocFormat(g_window_pixel_format);
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     for (int x = 0; x < num_x; x++) {
         const uint8* col_data = map->operator[](x);
         dst_rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
@@ -97,6 +106,19 @@ void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tile
 
                 SDL_Rect src_rect = {frame.x, frame.y, frame.w, frame.h};
                 SDL_RenderCopy(renderer, tilesheet->texture, &src_rect, &dst_rect);
+
+                //
+                int16 depth = y - ground_level;
+
+                depth = (depth < start_depth) ? start_depth : ((depth>end_depth) ? end_depth : depth);
+
+                real32 f = (real32)(depth - start_depth) / (end_depth - start_depth);
+                uint8 r = (r_start*(1-f) + r_end*f);
+                uint8 g = (g_start*(1-f) + g_end*f);
+                uint8 b = (b_start*(1-f) + b_end*f);
+                uint8 a = (a_start*(1-f) + a_end*f);
+                SDL_SetRenderDrawColor(renderer, r, g, b, a);
+                SDL_RenderFillRect(renderer, &dst_rect);
             }
         }
     }
@@ -119,8 +141,10 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
             const uint8 cell = col_data[y];
             rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
-            snprintf(buffer, 16, "%d", cell);
-            Render_Text(renderer, g_small_font, color, rect, buffer);
+            if (cell != 0) {
+                snprintf(buffer, 16, "%d", cell);
+                Render_Text(renderer, g_small_font, color, rect, buffer);
+            }
         }
     }
 }

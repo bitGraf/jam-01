@@ -8,6 +8,7 @@
             "cwd": "${workspaceRoot}/run_tree",
             //"symbolSearchPath": "C:\\Symbols;C:\\SymbolDir2",
             "externalConsole": false,
+            "console": "integratedTerminal",
             "logging": {
                 "moduleLoad": false,
                 "trace": true

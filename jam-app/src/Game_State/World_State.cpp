@@ -1,5 +1,6 @@
 #include "Game_State.h"
 
+#include "utils.h"
 #include "Render_Utils.h"
 #include "logging.h"
 
@@ -14,12 +15,11 @@ extern int32 g_window_height;
 
 enum Move_Reason {
     MOVE_NOT_POSSIBLE = 0,
-    MOVE_POSSIBLE = 1,
-    MOVE_AND_BREAK = 2
+    MOVE_POSSIBLE,
+    MOVE_AND_BREAK,
+    DEPOSIT_FOOD,
+    WITHDRAW_FOOD
 };
-
-uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y, const World& world);
-uint8 Break_Block(int16 world_x, int16 world_y, World& world);
 
 World_State::World_State(const char* filename) {
     log_trace("World_State::World_State(%s)", filename);
@@ -37,12 +37,40 @@ World_State::World_State(const char* filename) {
     world.grid.Fill(1, 1, 23, ground_level, 0);
     world.grid.Fill(1, ground_level+1, 23, world.grid.map_height - ground_level - 2, 2);
     world.grid.Fill(15, ground_level-4, 8, 5, 1);
+    world.grid[15][ground_level] = 4;
+    world.grid[14][ground_level+1] = 5;
+
+    int num_to_place = 20;
+    for (int n = 0; n < num_to_place; n++) {
+        int16 x = rand_int(1, 23);
+        int16 y = rand_int(ground_level+5, 58);
+
+        world.grid[x][y] = 3;
+    }
+    num_to_place = 200;
+    for (int n = 0; n < num_to_place; n++) {
+        int16 x = rand_int(1, 23);
+        int16 y = rand_int(ground_level+5, 58);
+
+        world.grid[x][y] = 1;
+    }
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
     player.world_x = 6;
     player.world_y = ground_level;
     player.angle = 0.0;
+
+    hunger = 0.0;
+    hunger_rate = 0.001;
+    move_cost = 0.002;
+    break_cost = 0.01;
+    colony_hunger = 0.0;
+    carrying_food = 0;
+    colony_food = 100;
+    colony_size = 100;
+    field_eat_ratio = 0.25;
+    colony_eat_ratio = 1.0;
 }
 
 World_State::~World_State() {
@@ -54,7 +82,24 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_RenderClear(renderer);
 
     // Draw sprite
+    int32 depth = player.world_y - ground_level;
+    bool in_colony = (depth <= 0);
     player.sprite.Update(dt);
+    hunger += (hunger_rate * dt);
+    if (hunger > 1.0) {
+        if (in_colony) {
+            colony_food--;
+            hunger -= colony_eat_ratio;
+        } else {
+            carrying_food--;
+            hunger -= field_eat_ratio;
+        }
+    }
+    colony_hunger += (hunger_rate * colony_size * dt);
+    if (colony_hunger > 1.0) {
+        colony_food--;
+        colony_hunger-=1.0;
+    }
     real32 stick_x = 0.0, stick_y = 0.0;
     
     //stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
@@ -69,18 +114,19 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
     stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
     stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
-    world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (500.0 * dt);
+    world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (1500.0 * dt);
     if (world.cam_world_pos.y < (g_window_height - 16)) {
         world.cam_world_pos.y = g_window_height - 16;
     }
-
-    int32 depth = player.world_y - ground_level;
+    if (world.cam_world_pos.y > (60*32 - 16)) {
+        world.cam_world_pos.y = (60*32 - 16);
+    }
 
 
     //////////// Render
     // tilemap
-    Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y);
-    //Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_x, world.grid_y);
+    Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y, ground_level);
+    //Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y);
 
     // origin
     Draw_Sprite(renderer, world.sprite_origin, world.Get_Origin_Screen_Pos(), 0.0);
@@ -93,12 +139,33 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     laml::Vec2 screen_pos = world.Get_Screen_Pos(player.world_x, player.world_y);
     Draw_Sprite(renderer, player.sprite, screen_pos, player.angle);
 
-    // world info
-    SDL_Rect rect = { 4, 100, 0, 0 };
+    SDL_Rect rect = { 4, 50, 0, 0 };
     SDL_Color color = { 255, 255, 255, 255 };
     SDL_Color back_color = { 0, 0, 0, 255 };
     char buffer[256];
 
+    snprintf(buffer, 256, "Colony: %d", colony_size);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "  Hunger: %.6f", colony_hunger);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "  Food: %d", colony_food);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+
+    snprintf(buffer, 256, "[You]");
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "  Hunger: %.6f", hunger);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "  Food: %d", carrying_food);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+
+    /*
+    // world info
     snprintf(buffer, 256, "Origin: <%.0f, %.0f>", world.origin.x, world.origin.y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
@@ -119,6 +186,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     rect.y += g_font_size_small;
     snprintf(buffer, 256, "Depth: %d", depth);
     Render_Text(renderer, g_small_font, color, rect, buffer);
+    */
 }
 
 bool World_State::On_Action_Event(Action_Event action) {
@@ -143,24 +211,41 @@ bool World_State::On_Action_Event(Action_Event action) {
     } else if (action.action == Action_Left && action.pressed) {
         move_x = -1;
     } else if (action.action == Action_Up && action.pressed) {
-        move_y = -1;
+        if (player.world_y > ground_level)
+            move_y = -1;
     } else if (action.action == Action_Down && action.pressed) {
         move_y = 1;
     }
 
     if (move_x || move_y) {
-        uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y, world);
+        uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y);
         switch (reason) {
             case MOVE_POSSIBLE: {
                 this->player.world_x += move_x;
                 this->player.world_y += move_y;
+                hunger += move_cost;
             } break;
 
             case MOVE_AND_BREAK: {
                 this->player.world_x += move_x;
                 this->player.world_y += move_y;
+                hunger += break_cost;
 
-                Break_Block(player.world_x, player.world_y, world);
+                Break_Block(player.world_x, player.world_y);
+            } break;
+
+            case DEPOSIT_FOOD: {
+                if (this->carrying_food > 0) {
+                    this->carrying_food--;
+                    this->colony_food++;
+                }
+            } break;
+
+            case WITHDRAW_FOOD: {
+                if (this->colony_food > 0) {
+                    this->colony_food--;
+                    this->carrying_food++;
+                }
             } break;
         }
 
@@ -170,7 +255,7 @@ bool World_State::On_Action_Event(Action_Event action) {
     return false;
 }
 
-uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y, const World& world) {
+uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y) {
     int16 end_x = start_x + move_x;
     int16 end_y = start_y + move_y;
 
@@ -185,12 +270,29 @@ uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y, cons
         return MOVE_AND_BREAK;
     }
 
+    if (end_cell == 3) {
+        return MOVE_AND_BREAK;
+    }
+
+    if (end_cell == 4) {
+        return DEPOSIT_FOOD;
+    }
+
+    if (end_cell == 5) {
+        return WITHDRAW_FOOD;
+    }
+
     return MOVE_NOT_POSSIBLE;
 }
 
-uint8 Break_Block(int16 world_x, int16 world_y, World& world) {
+uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
     uint8 cell = world.grid[world_x][world_y];
     log_debug("destroy cell: %d", cell);
+
+    if (cell == 3) {
+        log_info("Got some goo");
+        carrying_food++;
+    }
 
     world.grid[world_x][world_y] = 0;
 
