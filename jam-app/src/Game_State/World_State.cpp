@@ -17,14 +17,9 @@ World_State::World_State(const char* filename) {
     level_name = filename;
 
     // Initialize world origin
-    world.origin = laml::Vec2(g_window_width/2.0, g_window_height/2.0);
-    world.cam_world_pos = laml::Vec2(0.0, 0.0);
-    world.sprite_origin.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus.png", 32, 32, 16, 16);
-    world.sprite_cam.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus2.png", 32, 32, 16, 16);
-    world.grid_x = 32;
-    world.grid_y = 32;
-    world.grid.Create(8, 8);
-    world.grid.map[1][3] = 5;
+    world.origin = laml::Vec2(0.0, g_window_height);
+    world.Init_Grid(128, 32, 32, 32);
+    world.grid[1][3] = 5;
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");

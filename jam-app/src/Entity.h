@@ -5,7 +5,9 @@
 
 struct Tilemap {
     int16 map_width, map_height; // num tiles
-    uint8** map; // actual data
+
+    uint8* operator[](int16 x);
+    const uint8* operator[](int16 x) const;
 
     void Create(int16 map_x, int16 map_y);
     void Destroy();
@@ -14,6 +16,7 @@ struct Tilemap {
     ~Tilemap();
 
 private:
+    uint8** map; // actual data
     bool init;
 };
 
@@ -22,6 +25,8 @@ struct World {
     laml::Vec2 cam_world_pos;
     Sprite sprite_origin;
     Sprite sprite_cam;
+
+    void Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y);
 
     int16 grid_x, grid_y;
     Tilemap grid;

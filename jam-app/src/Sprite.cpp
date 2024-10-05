@@ -231,3 +231,71 @@ void Sprite::Set_Sequence(uint8 sequence_idx, uint8 flags) {
     Sprite_Sequence& sequence = this->sequences[current_sequence];
     sequence.sequence_time = 0.0;
 }
+
+
+
+/////////////////////////////////////////////////////////////////////
+// Indexed_Tilesheet
+/////////////////////////////////////////////////////////////////////
+
+//struct Indexed_Tilesheet {
+//    Indexed_Tilesheet();
+//
+//    bool Load_Tilesheet(SDL_Renderer* renderer, const char* filename, int32 tile_w, int32 tile_h);
+//    bool Load_Tilesheet_From_Meta(SDL_Renderer* renderer, const char* filename);
+//    void Destroy();
+//
+//    const Sprite_Frame& Get_Sprite(int16 index) const;
+//
+//    SDL_Texture* texture;
+//};
+
+Indexed_Tilesheet::Indexed_Tilesheet() {}
+
+bool Indexed_Tilesheet::Load_Tilesheet(SDL_Renderer* renderer, const char* filename, int32 tile_w, int32 tile_h) {
+    // Load image into texture
+    int sheet_w = 0;
+    int sheet_h = 0;
+    {
+        SDL_Surface* image = IMG_Load(filename);
+        if (!image) {
+            log_fatal("Error loading image [%s]: %s", filename, SDL_GetError());
+            return false;
+        }
+
+        sheet_w = image->w;
+        sheet_h = image->h;
+
+        texture = SDL_CreateTextureFromSurface(renderer, image);
+        SDL_FreeSurface(image);
+        image = nullptr;
+    }
+    if (!texture) {
+        log_fatal("Error creating texture from surface: %s", SDL_GetError());
+        return false;
+    }
+
+    // Slice into frames
+    int num_x = (sheet_w / tile_w);
+    int num_y = (sheet_h / tile_h);
+    if ((num_x * tile_w != sheet_w) || (num_y * tile_h != sheet_h)) {
+        log_warn("Sheet is %dx%d, does not divide nicely into %dx%d blocks.", sheet_w, sheet_h, tile_w, tile_h);
+    }
+
+    return true;
+}
+
+void Indexed_Tilesheet::Destroy() {
+    if (texture) {
+        SDL_DestroyTexture(texture);
+        texture = nullptr;
+    }
+}
+
+Sprite_Frame Indexed_Tilesheet::Get_Sprite_Frame(int16 index) const {
+    int16 index_x = index;
+    int16 index_y = index;
+
+    Sprite_Frame frame = {0};
+    return frame;
+}

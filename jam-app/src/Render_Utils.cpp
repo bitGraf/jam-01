@@ -84,13 +84,13 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
     SDL_Color color = { 255, 255, 255, 255 };
     SDL_Color back_color = { 0, 0, 0, 255 };
 
-    for (int y = 0; y < num_y; y++) {
-        const uint8* row_data = map->map[y];
-        rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
+    for (int x = 0; x < num_x; x++) {
+        const uint8* col_data = map->operator[](x);
+        rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
 
-        for (int x = 0; x < num_x; x++) {
-            const uint8 cell = row_data[x];
-            rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
+        for (int y = 0; y < num_y; y++) {
+            const uint8 cell = col_data[y];
+            rect.y = (screen_pos.y - tile_height*y) - tile_height/2;
 
             snprintf(buffer, 16, "%d", cell);
             Render_Text(renderer, g_small_font, color, rect, buffer);

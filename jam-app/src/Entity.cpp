@@ -1,5 +1,10 @@
 #include "Entity.h"
 
+#include "logging.h"
+
+#include "Game_App.h"
+extern Game_App g_game;
+
 laml::Vec2 World::Get_Screen_Pos(laml::Vec2 world_pos) {
     return laml::Vec2(origin.x + (world_pos.x - cam_world_pos.x), origin.y - (world_pos.y - cam_world_pos.y));
 }
@@ -21,6 +26,16 @@ laml::Vec2 World::Get_Screen_Pos(int16 world_x, int16 world_y) {
     return Get_Screen_Pos(world_pos);
 }
 
+void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y) {
+    cam_world_pos = laml::Vec2(0.0, 0.0);
+    sprite_origin.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus.png", 32, 32, 16, 16);
+    sprite_cam.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus2.png", 32, 32, 16, 16);
+
+    grid.Create(num_cells_x, num_cells_y);
+    grid_x = cell_x;
+    grid_y = cell_y;
+}
+
 // Tilemap
 
 Tilemap::Tilemap() 
@@ -32,16 +47,41 @@ Tilemap::~Tilemap() {
     }
 }
 
+uint8* Tilemap::operator[](int16 x) {
+    if (x < 0) {
+        log_error("Tilemap[%d] out of bounds!", x);
+        return map[0];
+    }
+    if (x >= this->map_width) {
+        log_error("Tilemap[%d] out of bounds!", x);
+        return map[map_width-1];
+    }
+
+    return map[x];
+}
+const uint8* Tilemap::operator[](int16 x) const {
+    if (x < 0) {
+        log_error("Tilemap[%d] out of bounds!", x);
+        return map[0];
+    }
+    if (x >= this->map_width) {
+        log_error("Tilemap[%d] out of bounds!", x);
+        return map[map_width-1];
+    }
+
+    return map[x];
+}
+
 void Tilemap::Create(int16 map_x, int16 map_y) {
     this->map_width = map_x;
     this->map_height = map_y;
 
     this->map = new uint8*[map_x];
-    for (int y = 0; y < map_y; y++) {
-        this->map[y] = new uint8[map_x];
+    for (int x = 0; x < map_x; x++) {
+        this->map[x] = new uint8[map_y];
 
-        for (int x = 0; x < map_x; x++) {
-            this->map[y][x] = 0;
+        for (int y = 0; y < map_y; y++) {
+            this->map[x][y] = 0;
         }
     }
 
@@ -49,9 +89,9 @@ void Tilemap::Create(int16 map_x, int16 map_y) {
 }
 
 void Tilemap::Destroy() {
-    for (int y = 0; y < map_height; y++) {
-        delete [] this->map[y];
-        this->map[y] = nullptr;
+    for (int x = 0; x < map_width; x++) {
+        delete [] this->map[x];
+        this->map[x] = nullptr;
     }
     delete [] this->map;
     this->map = nullptr;

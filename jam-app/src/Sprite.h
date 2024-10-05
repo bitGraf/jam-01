@@ -46,3 +46,15 @@ struct Sprite {
     uint8 current_sequence;
     std::vector<Sprite_Sequence> sequences;
 };
+
+struct Indexed_Tilesheet {
+    Indexed_Tilesheet();
+
+    bool Load_Tilesheet(SDL_Renderer* renderer, const char* filename, int32 tile_w, int32 tile_h);
+    bool Load_Tilesheet_From_Meta(SDL_Renderer* renderer, const char* filename);
+    void Destroy();
+
+    Sprite_Frame Get_Sprite_Frame(int16 index) const;
+
+    SDL_Texture* texture;
+};
