@@ -36,7 +36,7 @@
             "Name": "Hibernation",
             "Cost": 200,
             "Ability": 1,
-            "Description": "Able to enter a hibernation state, allowing you to survive the night outside of the colony"
+            "Description": "Able to enter a hibernation state"
         },
         {
             "Name": "Appendicular Muscles",
@@ -44,7 +44,7 @@
             "Speed": 5,
             "Strength": 1,
             "Ability": 2,
-            "Description": "Stronger leg muscles allow you to tunnel quickly in a direction"
+            "Description": "Tunnel quickly in a direction"
         }
     ]
 }

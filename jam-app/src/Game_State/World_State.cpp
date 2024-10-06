@@ -108,7 +108,7 @@ World_State::World_State(const char* filename)
     }
 
     // Load sprite-sheet
-    player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
+    player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/bug.sprite");
     player.world_x = spawn_x;
     player.world_y = spawn_y;
     player.angle = 0.0;
@@ -366,16 +366,25 @@ bool World_State::On_Action_Event(Action_Event action) {
             return false;
         } else if (action.action == Action_X) {
             // Dash Left
-            this->player.sprite.Set_Sequence(2, 0);
-            return true;
+            if (can_dash) {
+                this->player.sprite.Set_Sequence(2, 0);
+                return true;
+            }
+            return false;
         } else if (action.action == Action_B) {
             // Dash Right
-            this->player.sprite.Set_Sequence(3, 0);
-            return true;
+            if (can_dash) {
+                this->player.sprite.Set_Sequence(3, 0);
+                return true;
+            }
+            return false;
         } else if (action.action == Action_A) {
             // Dash Down
-            this->player.sprite.Set_Sequence(4, 0);
-            return true;
+            if (can_dash) {
+                this->player.sprite.Set_Sequence(4, 0);
+                return true;
+            }
+            return false;
         }
     
         int16 move_x = 0, move_y = 0;

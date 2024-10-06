@@ -11,6 +11,8 @@ extern TTF_Font* g_medium_font;
 extern int32 g_font_size_medium;
 extern TTF_Font* g_small_font;
 extern int32 g_font_size_small;
+extern TTF_Font* g_tiny_font;
+extern int32 g_font_size_tiny;
 const int32 offset = 2;
 
 #include "Game_App.h"
@@ -61,7 +63,7 @@ Shop_State::~Shop_State() {
 }
 
 void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
-    SDL_Rect rect = { 10, 50, 0, 0 };
+    SDL_Rect rect = { 10, 4, 0, 0 };
 
     SDL_Color color = { 255, 255, 255, 255 };
     SDL_Color back_color = { 0, 0, 0, 255 };
@@ -77,8 +79,8 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     Render_Text(renderer, g_large_font, color, rect, shop_title.c_str());
 
     // Print food/stats
-    rect.y = 150;
-    rect.x = 400;
+    rect.y = 100;
+    rect.x = 450;
     snprintf(buffer, 32, "Food: %d", handover.food);
     Render_Text(renderer, g_medium_font, back_color, rect, buffer);
     rect.x -= offset;
@@ -111,14 +113,14 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     // Start Menu options, begining with Leave
     rect.y = 150;
     rect.x = 10;
-    Render_Text(renderer, g_medium_font, back_color, rect, "Leave");
+    Render_Text(renderer, g_small_font, back_color, rect, "Leave");
     rect.x -= offset;
     rect.y -= offset;
     if (current_menu_item == 0)
-        Render_Text(renderer, g_medium_font, select_color, rect, "Leave");
+        Render_Text(renderer, g_small_font, select_color, rect, "Leave");
     else
-        Render_Text(renderer, g_medium_font, color, rect, "Leave");
-    rect.y += (g_font_size_medium - offset);
+        Render_Text(renderer, g_small_font, color, rect, "Leave");
+    rect.y += (g_font_size_small - offset);
 
     // List upgrades as additional options
     for (int n = 0; n < upgrades.size(); n++) {
@@ -127,17 +129,17 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
         std::string up_name = upgrade.name;
         if (upgrade.bought) {
-            up_name = "Bought: " + up_name;
+            up_name = "Bought!";
         }
 
-        Render_Text(renderer, g_medium_font, back_color, rect, up_name.c_str());
+        Render_Text(renderer, g_small_font, back_color, rect, up_name.c_str());
         rect.x -= offset;
         rect.y -= offset;
         if (current_menu_item == (n+1))
-            Render_Text(renderer, g_medium_font, select_color, rect, up_name.c_str());
+            Render_Text(renderer, g_small_font, select_color, rect, up_name.c_str());
         else
-            Render_Text(renderer, g_medium_font, color, rect, up_name.c_str());
-        rect.y += (g_font_size_medium - offset);
+            Render_Text(renderer, g_small_font, color, rect, up_name.c_str());
+        rect.y += (g_font_size_small - offset);
     }
 
     // show upgrade stats if a upgrade is hovered
@@ -147,61 +149,85 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
         rect.y = 300;
         rect.x = 450;
 
-        Render_Text(renderer, g_medium_font, back_color, rect, upgrade.name.c_str());
+        Render_Text(renderer, g_small_font, back_color, rect, upgrade.name.c_str());
         rect.x -= offset;
         rect.y -= offset;
-        Render_Text(renderer, g_medium_font, color, rect, upgrade.name.c_str());
-        rect.y += (g_font_size_medium - offset);
+        Render_Text(renderer, g_small_font, color, rect, upgrade.name.c_str());
+        rect.y += (g_font_size_small - offset);
 
         snprintf(buffer, 32, "Cost: %d", upgrade.cost);
-        Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-        rect.x -= offset;
-        rect.y -= offset;
-        Render_Text(renderer, g_medium_font, color, rect, buffer);
-        rect.y += (g_font_size_medium - offset);
-
-        if (upgrade.speed != 0) {
-            snprintf(buffer, 32, "Speed +%d", upgrade.speed);
-            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-            rect.x -= offset;
-            rect.y -= offset;
-            Render_Text(renderer, g_medium_font, color, rect, buffer);
-            rect.y += (g_font_size_medium - offset);
-        }
-
-        if (upgrade.strength != 0) {
-            snprintf(buffer, 32, "Strength +%d", upgrade.strength);
-            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-            rect.x -= offset;
-            rect.y -= offset;
-            Render_Text(renderer, g_medium_font, color, rect, buffer);
-            rect.y += (g_font_size_medium - offset);
-        }
-
-        if (upgrade.extraction != 0) {
-            snprintf(buffer, 32, "Extraction +%d", upgrade.extraction);
-            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-            rect.x -= offset;
-            rect.y -= offset;
-            Render_Text(renderer, g_medium_font, color, rect, buffer);
-            rect.y += (g_font_size_medium - offset);
-        }
-
-        if (upgrade.ability != 0) {
-            snprintf(buffer, 32, "[%s]", Ability_Names[upgrade.ability]);
-            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-            rect.x -= offset;
-            rect.y -= offset;
-            Render_Text(renderer, g_medium_font, color, rect, buffer);
-            rect.y += (g_font_size_medium - offset);
-        }
-
-        snprintf(buffer, 256, "%s", upgrade.description.c_str());
         Render_Text(renderer, g_small_font, back_color, rect, buffer);
         rect.x -= offset;
         rect.y -= offset;
         Render_Text(renderer, g_small_font, color, rect, buffer);
         rect.y += (g_font_size_small - offset);
+
+        if (upgrade.speed != 0) {
+            snprintf(buffer, 32, "Speed +%d", upgrade.speed);
+            Render_Text(renderer, g_small_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_small_font, color, rect, buffer);
+            rect.y += (g_font_size_small - offset);
+        }
+
+        if (upgrade.strength != 0) {
+            snprintf(buffer, 32, "Strength +%d", upgrade.strength);
+            Render_Text(renderer, g_small_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_small_font, color, rect, buffer);
+            rect.y += (g_font_size_small - offset);
+        }
+
+        if (upgrade.extraction != 0) {
+            snprintf(buffer, 32, "Extraction +%d", upgrade.extraction);
+            Render_Text(renderer, g_small_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_small_font, color, rect, buffer);
+            rect.y += (g_font_size_small - offset);
+        }
+
+        if (upgrade.ability != 0) {
+            snprintf(buffer, 32, "[%s]", Ability_Names[upgrade.ability]);
+            Render_Text(renderer, g_small_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_small_font, color, rect, buffer);
+            rect.y += (g_font_size_small - offset);
+        }
+
+        rect.x = 10;
+        rect.y = 450;
+
+        int max_per_line = 32;
+        int num_chars = upgrade.description.length();
+        int total_chars = 0;
+        while (total_chars < num_chars) {
+            int seg_length = 0;
+            std::string seg;
+            while (seg_length < max_per_line && seg_length < num_chars) {
+                size_t k = upgrade.description.find(" ", total_chars+seg_length);
+                if (k > num_chars) {
+                    seg += upgrade.description.substr(total_chars+seg_length, num_chars - total_chars+seg_length);
+                    seg_length = (seg.length());
+                } else {
+                    seg += upgrade.description.substr(total_chars+seg_length, k-seg_length) + " ";
+                    seg_length = (seg.length());
+                }
+
+                bool done = true;
+            }
+            
+            Render_Text(renderer, g_small_font, back_color, rect, seg.c_str());
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_small_font, color, rect, seg.c_str());
+            rect.y += (g_font_size_small - offset);
+
+            total_chars += seg.length();
+        }
     }
 }
 
@@ -254,9 +280,9 @@ bool Shop_State::On_Action_Event(Action_Event action) {
 }
 
 void Shop_State::Leave_Shop() {
-    //if (!Write_Config()) {
-    //    log_error("Failed to write shop config!");
-    //}
+    if (!Write_Config()) {
+        log_error("Failed to write shop config!");
+    }
 
     g_game.Pop_State();
 }

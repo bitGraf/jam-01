@@ -1,0 +1,45 @@
+{
+    "Sprite_Sheet": "data/bug-sheet.png",
+    "Sprite_Width": 32,
+    "Sprite_Height": 32,
+    "Anchor_X": 16,
+    "Anchor_Y": 16,
+    "Sequences": [
+        {
+            "name": "idle",
+            "num_frames": 4,
+            "frame_rate": 4.0,
+            "looping": true
+        },
+        {
+            "name": "sleeping",
+            "num_frames": -1,
+            "frame_rate": 3.0,
+            "looping": true
+        },
+        {
+            "name": "dead",
+            "num_frames": -1,
+            "frame_rate": 1.0,
+            "looping": true
+        },
+        {
+            "name": "dash_left",
+            "num_frames": -1,
+            "frame_rate": 1.0,
+            "looping": true
+        },
+        {
+            "name": "dash_right",
+            "num_frames": -1,
+            "frame_rate": 1.0,
+            "looping": true
+        },
+        {
+            "name": "dash_down",
+            "num_frames": -1,
+            "frame_rate": 1.0,
+            "looping": true
+        }
+    ]
+}
