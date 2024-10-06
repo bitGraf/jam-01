@@ -94,15 +94,15 @@ void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tile
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     for (int x = 0; x < num_x; x++) {
-        const uint8* col_data = map->operator[](x);
+        const Tile_Data* col_data = map->operator[](x);
         dst_rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
 
         for (int y = 0; y < num_y; y++) {
-            const uint8 cell = col_data[y];
+            const Tile_Data cell = col_data[y];
             dst_rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
-            if (cell) {
-                Sprite_Frame frame = tilesheet->Get_Sprite_Frame(cell);
+            if (cell.type) {
+                Sprite_Frame frame = tilesheet->Get_Sprite_Frame(cell.type);
 
                 SDL_Rect src_rect = {frame.x, frame.y, frame.w, frame.h};
                 SDL_RenderCopy(renderer, tilesheet->texture, &src_rect, &dst_rect);
@@ -134,15 +134,15 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
     SDL_Color back_color = { 0, 0, 0, 255 };
 
     for (int x = 0; x < num_x; x++) {
-        const uint8* col_data = map->operator[](x);
+        const Tile_Data* col_data = map->operator[](x);
         rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
 
         for (int y = 0; y < num_y; y++) {
-            const uint8 cell = col_data[y];
+            const Tile_Data cell = col_data[y];
             rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
-            if (cell != 0) {
-                snprintf(buffer, 16, "%d", cell);
+            if (cell.type != 0) {
+                snprintf(buffer, 16, "%d", cell.type);
                 Render_Text(renderer, g_small_font, color, rect, buffer);
             }
         }

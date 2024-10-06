@@ -33,26 +33,26 @@ World_State::World_State(const char* filename) {
     world.cam_world_pos.x = -16;
     world.cam_world_pos.y = g_window_height - 16;
 
-    world.grid.Fill(1);
-    world.grid.Fill(1, 1, 23, ground_level, 0);
-    world.grid.Fill(1, ground_level+1, 23, world.grid.map_height - ground_level - 2, 2);
-    world.grid.Fill(15, ground_level-4, 8, 5, 1);
-    world.grid[15][ground_level] = 4;
-    world.grid[14][ground_level+1] = 5;
+    world.grid.Fill(1, 0);                                                                  // fill whole with bedrock
+    world.grid.Fill(1, 1, 23, ground_level, 0, 0);                                          // empty out burrow
+    world.grid.Fill(1, ground_level+1, 23, world.grid.map_height - ground_level - 2, 2, 5); // fill rest with dirt
+    world.grid.Fill(15, ground_level-4, 8, 5, 1, 0);                                        // build house
+    world.grid[15][ground_level] = Tile_Data(4);                                            // depositer
+    world.grid[14][ground_level+1] = Tile_Data(5);                                          // withdrawer
 
     int num_to_place = 20;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = 3;
+        world.grid[x][y] = Tile_Data(3);
     }
     num_to_place = 200;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = 1;
+        world.grid[x][y] = Tile_Data(1);
     }
 
     // Load sprite-sheet
@@ -264,25 +264,25 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     int16 end_x = start_x + move_x;
     int16 end_y = start_y + move_y;
 
-    uint8 start_cell = world.grid[start_x][start_y];
-    uint8 end_cell = world.grid[end_x][end_y];
+    Tile_Data& start_cell = world.grid[start_x][start_y];
+    Tile_Data& end_cell = world.grid[end_x][end_y];
 
-    if (end_cell == 0) {
+    if (end_cell.type == 0) {
         // check if there are walls to support us if going upward
         if (move_y < 0) {
-            uint8 left_wall  = world.grid[start_x-1][end_y];
-            uint8 right_wall = world.grid[start_x+1][end_y];
+            Tile_Data left_wall  = world.grid[start_x-1][end_y];
+            Tile_Data right_wall = world.grid[start_x+1][end_y];
 
             if (end_y == ground_level) return MOVE_POSSIBLE;
 
-            if (left_wall != 0 || right_wall != 0) {
+            if (left_wall.type != 0 || right_wall.type != 0) {
                 // has support
                 return MOVE_POSSIBLE;
             } else {
-                uint8 left_floor  = world.grid[start_x-1][start_y];
-                uint8 right_floor = world.grid[start_x+1][start_y];
+                Tile_Data left_floor  = world.grid[start_x-1][start_y];
+                Tile_Data right_floor = world.grid[start_x+1][start_y];
 
-                if (left_floor != 0 || right_floor != 0) {
+                if (left_floor.type != 0 || right_floor.type != 0) {
                     return MOVE_POSSIBLE;
                 }
 
@@ -298,19 +298,23 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
         return MOVE_NOT_POSSIBLE;
     }
 
-    if (end_cell == 2) {
+    if (end_cell.type == 2) { // dirt
+        end_cell.data--;
+        if (end_cell.data <= 0) 
+            return MOVE_AND_BREAK;
+        else
+            return MOVE_NOT_POSSIBLE;
+    }
+
+    if (end_cell.type == 3) {
         return MOVE_AND_BREAK;
     }
 
-    if (end_cell == 3) {
-        return MOVE_AND_BREAK;
-    }
-
-    if (end_cell == 4) {
+    if (end_cell.type == 4) {
         return DEPOSIT_FOOD;
     }
 
-    if (end_cell == 5) {
+    if (end_cell.type == 5) {
         return WITHDRAW_FOOD;
     }
 
@@ -318,10 +322,10 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
 }
 
 uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
-    uint8 cell = world.grid[world_x][world_y];
+    Tile_Data cell = world.grid[world_x][world_y];
     log_debug("destroy cell: %d", cell);
 
-    if (cell == 3) {
+    if (cell.type == 3) {
         log_info("Got some goo");
         carrying_food++;
     }

@@ -3,23 +3,32 @@
 #include <laml/laml.hpp>
 #include "Sprite.h"
 
+struct Tile_Data {
+    Tile_Data();
+    Tile_Data(uint8 t);
+    Tile_Data(uint8 t, uint8 d);
+
+    uint8 type;
+    uint8 data;
+};
+
 struct Tilemap {
     int16 map_width, map_height; // num tiles
 
-    uint8* operator[](int16 x);
-    const uint8* operator[](int16 x) const;
+    Tile_Data* operator[](int16 x);
+    const Tile_Data* operator[](int16 x) const;
 
     void Create(int16 map_x, int16 map_y);
     void Destroy();
 
-    void Fill(uint8 cell_value);
-    void Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_value);
+    void Fill(uint8 cell_type, uint8 cell_data);
+    void Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_type, uint8 cell_data);
     
     Tilemap();
     ~Tilemap();
 
 private:
-    uint8** map; // actual data
+    Tile_Data** map; // actual data
     bool init;
 };
 

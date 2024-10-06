@@ -43,6 +43,18 @@ void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 
 
 // Tilemap
 
+Tile_Data::Tile_Data() 
+ : type(0), data(0)
+{}
+
+Tile_Data::Tile_Data(uint8 t) 
+ : type(t), data(0)
+{}
+
+Tile_Data::Tile_Data(uint8 t, uint8 d) 
+ : type(t), data(d)
+{}
+
 Tilemap::Tilemap() 
  : map_width(0), map_height(0), init(false), map(nullptr)
 {}
@@ -52,7 +64,7 @@ Tilemap::~Tilemap() {
     }
 }
 
-uint8* Tilemap::operator[](int16 x) {
+Tile_Data* Tilemap::operator[](int16 x) {
     if (x < 0) {
         log_error("Tilemap[%d] out of bounds!", x);
         return map[0];
@@ -64,7 +76,7 @@ uint8* Tilemap::operator[](int16 x) {
 
     return map[x];
 }
-const uint8* Tilemap::operator[](int16 x) const {
+const Tile_Data* Tilemap::operator[](int16 x) const {
     if (x < 0) {
         log_error("Tilemap[%d] out of bounds!", x);
         return map[0];
@@ -81,13 +93,9 @@ void Tilemap::Create(int16 map_x, int16 map_y) {
     this->map_width = map_x;
     this->map_height = map_y;
 
-    this->map = new uint8*[map_x];
+    this->map = new Tile_Data*[map_x];
     for (int x = 0; x < map_x; x++) {
-        this->map[x] = new uint8[map_y];
-
-        for (int y = 0; y < map_y; y++) {
-            this->map[x][y] = 0;
-        }
+        this->map[x] = new Tile_Data[map_y];
     }
 
     this->init = true;
@@ -107,22 +115,24 @@ void Tilemap::Destroy() {
     init = false;
 }
 
-void Tilemap::Fill(uint8 cell_value) {
+void Tilemap::Fill(uint8 cell_type, uint8 cell_data) {
     for (int x = 0; x < map_width; x++) {
-        uint8* col_data = map[x];
+        Tile_Data* col_data = map[x];
         for (int y = 0; y < map_height; y++) {
-            col_data[y] = cell_value;
+            col_data[y].type = cell_type;
+            col_data[y].data = cell_data;
         }
     }
 }
 
-void Tilemap::Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_value) {
+void Tilemap::Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_type, uint8 cell_data) {
     int end_x = start_x + width;
     int end_y = start_y + height;
     for (int x = start_x; x < end_x; x++) {
-        uint8* col_data = map[x];
+        Tile_Data* col_data = map[x];
         for (int y = start_y; y < end_y; y++) {
-            col_data[y] = cell_value;
+            col_data[y].type = cell_type;
+            col_data[y].data = cell_data;
         }
     }
 }
