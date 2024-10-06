@@ -11,11 +11,13 @@ using json = nlohmann::json;
 // Global vars :)
 Game_App g_game;
 
+TTF_Font* g_tiny_font;
 TTF_Font* g_small_font;
 TTF_Font* g_medium_font;
 TTF_Font* g_large_font;
 TTF_Font* g_huge_font;
 
+int32 g_font_size_tiny = 12;
 int32 g_font_size_small = 24;
 int32 g_font_size_medium = 36;
 int32 g_font_size_large = 48;
@@ -89,7 +91,7 @@ bool Game_App::Init() {
     }
 
     gamepad.Set_Deadzones(deadzone, deadzone, deadzone, deadzone);
-    Update_Volume(options.master_volume);
+    Update_Volume(options.master_volume, options.music_volume);
 
     log_info("SDL up and running!");
 
@@ -149,17 +151,18 @@ bool Game_App::Load_Assets() {
 
     // Load sounds
     sound = Mix_LoadWAV("data/Guard_death1.wav");
-    music = Mix_LoadMUS("data/tape.ogg");
+    music = Mix_LoadMUS("data/music.mp3");
     if (!music || !sound) {
         log_fatal("Failed to load music or sound: %s", Mix_GetError());
         return false;
     }
 
     // Load fonts
+    g_tiny_font   = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_tiny);
     g_small_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_small);
     g_medium_font = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_medium);
     g_large_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_large);
-    g_huge_font  = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_huge);
+    g_huge_font   = TTF_OpenFont("data/Silkscreen/slkscr.ttf", g_font_size_huge);
 
     log_info("All assets loaded!");
 
@@ -496,11 +499,13 @@ void Game_App::On_Key_Event(int32 key_code, bool pressed) {
     }
 }
 
-void Game_App::Update_Volume(uint8 new_volume) {
-    int vol = (((real32)new_volume) * MIX_MAX_VOLUME / 100.0f);
+void Game_App::Update_Volume(uint8 new_master_volume, uint8 new_music_volume) {
+    int master_vol = (((real32)new_master_volume) * MIX_MAX_VOLUME / 100.0f);
+    //int music_vol = (((real32)new_music_volume) * MIX_MAX_VOLUME / 100.0f);
+    int music_vol = (real32)(new_music_volume*new_master_volume * MIX_MAX_VOLUME) / (10000.0f);
 
-    Mix_VolumeMusic(vol);
-    Mix_MasterVolume(vol);
+    Mix_MasterVolume(master_vol);
+    Mix_VolumeMusic(music_vol);
 }
 
 void Game_App::Draw_Gamepad() {
@@ -705,6 +710,12 @@ bool Game_App::ReadConfig() {
                 } else if (data.find("Master_Volume") != data.end()) {
                     options.master_volume = data["Master_Volume"].get<int32>();
                 }
+
+                if (opt.find("Music_Volume") != opt.end()) {
+                    options.music_volume = opt["Music_Volume"].get<int32>();
+                } else if (data.find("Music_Volume") != data.end()) {
+                    options.music_volume = data["Music_Volume"].get<int32>();
+                }
             }
         }
     } catch (json::parse_error e) {
@@ -737,7 +748,8 @@ bool Game_App::WriteConfig() {
     try {
         json data = {
             {"Options", {
-                {"Master_Volume", options.master_volume}
+                {"Master_Volume", options.master_volume},
+                {"Music_Volume",  options.music_volume}
             }}
         };
 

@@ -17,6 +17,7 @@
 
 struct Game_Options {
     int master_volume = 50;
+    int music_volume = 50;
 };
 
 struct Game_App {
@@ -30,7 +31,7 @@ public:
     void Push_New_State(Game_State* state);
     void Pop_State();
 
-    void Update_Volume(uint8 new_volume);
+    void Update_Volume(uint8 new_master_volume, uint8 new_music_volume);
 
     SDL_Renderer* GetRenderer() { return renderer; }
     const SDL_Renderer* GetRenderer() const { return renderer; }

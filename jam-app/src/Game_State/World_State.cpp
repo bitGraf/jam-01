@@ -78,7 +78,7 @@ World_State::World_State(const char* filename) {
     player.world_y = ground_level;
     player.angle = 0.0;
     dig_strength = 1;
-    dig_speed = 3;
+    dig_speed = 1;
 
     hunger = 0.0;
     hunger_rate = 0.001;

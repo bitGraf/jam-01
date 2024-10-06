@@ -6,8 +6,8 @@
 #include <stdio.h>  // for vsnprintf
 #include <stdarg.h> // for va_args
 
-extern TTF_Font* g_small_font;
-extern int32 g_font_size_small;
+extern TTF_Font* g_tiny_font;
+extern int32 g_font_size_tiny;
 const int32 offset = 2;
 
 extern uint32 g_window_pixel_format;
@@ -141,10 +141,13 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
             const Tile_Data cell = col_data[y];
             rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
-            if (cell.type != 0) {
-                snprintf(buffer, 16, "%d", cell.type);
-                Render_Text(renderer, g_small_font, color, rect, buffer);
-            }
+            snprintf(buffer, 16, "%d", cell.type);
+            Render_Text(renderer, g_tiny_font, color, rect, buffer);
+
+            rect.x += tile_width/2;
+            snprintf(buffer, 16, "%d", cell.data);
+            Render_Text(renderer, g_tiny_font, color, rect, buffer);
+            rect.x -= tile_width/2;
         }
     }
 }
