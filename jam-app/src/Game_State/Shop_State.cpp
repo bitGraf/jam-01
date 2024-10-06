@@ -47,13 +47,13 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     char buffer[32];
 
     // Shop Title
-    Render_Text(renderer, g_large_font, back_color, rect, "Bug Shop");
+    Render_Text(renderer, g_large_font, back_color, rect, shop_title.c_str());
     rect.x -= offset;
     rect.y -= offset;
-    Render_Text(renderer, g_large_font, color, rect, "Bug Shop");
+    Render_Text(renderer, g_large_font, color, rect, shop_title.c_str());
 
     // Print food/stats
-    rect.y = 50;
+    rect.y = 150;
     rect.x = 400;
     snprintf(buffer, 32, "Food: %d", food);
     Render_Text(renderer, g_medium_font, back_color, rect, buffer);
@@ -110,7 +110,7 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     if (current_menu_item != 0) {
         const Upgrade& upgrade = upgrades[current_menu_item - 1];
 
-        rect.y = 200;
+        rect.y = 300;
         rect.x = 450;
 
         Render_Text(renderer, g_medium_font, back_color, rect, upgrade.name.c_str());
@@ -192,9 +192,9 @@ bool Shop_State::On_Action_Event(Action_Event action) {
 }
 
 void Shop_State::Leave_Shop() {
-    if (!Write_Config()) {
-        log_error("Failed to write shop config!");
-    }
+    //if (!Write_Config()) {
+    //    log_error("Failed to write shop config!");
+    //}
 
     g_game.Pop_State();
 }

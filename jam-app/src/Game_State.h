@@ -64,12 +64,16 @@ struct World_State : public Game_State {
 private:
     uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
     uint8 Break_Block(int16 world_x, int16 world_y);
+    void Next_Day();
 
 private:
     // World
     World world;
     int16 ground_level;
     bool show_debug;
+    real32 time_rate;
+    real32 time_of_day;
+    uint8 day_number;
 
     // Player
     Entity player;
@@ -94,7 +98,7 @@ private:
 
 struct Upgrade {
     Upgrade();
-    
+
     std::string name;
     int16 cost;
     uint8 speed;

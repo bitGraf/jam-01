@@ -13,13 +13,17 @@ extern Game_App g_game;
 extern int32 g_window_width;
 extern int32 g_window_height;
 
+const real32 day_start = 6;
+const real32 day_end = 10.0;
+
 enum Move_Reason {
     MOVE_NOT_POSSIBLE = 0,
     MOVE_POSSIBLE,
     MOVE_AND_BREAK,
     DEPOSIT_FOOD,
     WITHDRAW_FOOD,
-    ENTER_SHOP
+    ENTER_SHOP,
+    SLEEP
 };
 
 World_State::World_State(const char* filename) {
@@ -56,6 +60,7 @@ World_State::World_State(const char* filename) {
     world.grid.Fill(15, ground_level-4, 8, 5, Tile_Data(1));  // build house
     world.grid[15][ground_level] = Tile_Data(4);    // depositer
     world.grid[14][ground_level+1] = Tile_Data(5);  // withdrawer
+    world.grid[12][ground_level+1] = Tile_Data(8);  // bed
 
     // build upgrade hut
     world.grid[2][ground_level-1] = Tile_Data(6);
@@ -94,6 +99,12 @@ World_State::World_State(const char* filename) {
     dig_strength = 1;
     dig_speed = 1;
 
+    // day-night cycles
+    time_rate = 0.5; // 30 mins every second?
+    time_of_day = day_start;
+    day_number = 1;
+
+    // Hunger
     hunger = 0.0;
     hunger_rate = 0.001;
     move_cost = 0.002;
@@ -115,6 +126,12 @@ World_State::~World_State() {
 void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_SetRenderDrawColor(renderer, 120, 90, 255, 255);
     SDL_RenderClear(renderer);
+
+    // Update Time
+    time_of_day += time_rate * dt;
+    if (time_of_day > 24.0f) {
+        time_of_day -= 24.0f;
+    }
 
     // Draw sprite
     int32 depth = player.world_y - ground_level;
@@ -232,6 +249,27 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "Depth: %d", depth);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     */
+
+
+    // Time info
+    rect.x = 300;
+    rect.y = 10;
+
+    snprintf(buffer, 256, "Day: %d", day_number);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+
+    int32 time_hr = time_of_day;
+    int32 time_min = ((time_of_day - (real32)time_hr) * 60.0f);
+    char* am_pm = "am";
+    if (time_hr >= 12) {
+        time_hr -= 12;
+        am_pm = "pm";
+    }
+    if (time_hr == 0) time_hr = 12;
+    snprintf(buffer, 256, "Time: %2d:%02d %s", time_hr, time_min, am_pm);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
 }
 
 bool World_State::On_Action_Event(Action_Event action) {
@@ -300,6 +338,14 @@ bool World_State::On_Action_Event(Action_Event action) {
                 }
             } break;
 
+            case SLEEP: {
+                log_info("Going to sleep!");
+                bool allowed_to_sleep = true;
+                if (allowed_to_sleep) {
+                    Next_Day();
+                }
+            } break;
+
             case ENTER_SHOP: {
                 Game_State* new_state = new Shop_State(colony_food, dig_speed, dig_strength);
                 g_game.Push_New_State(new_state);
@@ -365,6 +411,10 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
         return WITHDRAW_FOOD;
     }
 
+    if (end_cell.type == 8) {
+        return SLEEP;
+    }
+
     if (end_cell.type == 15) {
         return ENTER_SHOP;
     }
@@ -384,4 +434,9 @@ uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
     world.grid[world_x][world_y].type = 0;
 
     return 0;
+}
+
+void World_State::Next_Day() {
+    time_of_day = day_start;
+    day_number++;
 }
