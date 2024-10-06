@@ -115,6 +115,9 @@ World_State::World_State(const char* filename)
     dig_strength = 1;
     dig_speed = 1;
     extraction = 1;
+    abilities = 0;
+    can_hibernate = false;
+    can_dash = false;
 
     // day-night cycles
     time_gradient.Load_From_Image("data/sky_gradient.png");
@@ -133,7 +136,7 @@ World_State::World_State(const char* filename)
     break_cost = 0.01;
     colony_hunger = 0.0;
     carrying_food = 0;
-    colony_food = 5;
+    colony_food = 5000;
     colony_size = 5;
     field_eat_ratio = 0.25;
     colony_eat_ratio = 1.0;
@@ -159,6 +162,9 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
     real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
 
+    can_hibernate = (abilities & ABILITY_HIBERNATE);
+    can_dash      = (abilities & ABILITY_DASH);
+
     // Update Time
     real32 time_advance_rate = fast_forward ? (time_rate*fast_forward_ratio) : time_rate;
     if (!fast_forward) time_advance_rate *= 1.0f + (r_trigger*9.0); // not pressed->1.0, max press->10.0
@@ -170,7 +176,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_Color bg = time_gradient.Sample(time_of_day);
 
     if ((time_of_day > day_end) && !fast_forward) {
-        if (in_colony) {
+        if (in_colony || can_hibernate) {
             log_info("End of day! go to sleep.");
             Next_Day();
         } else {
@@ -182,6 +188,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     if (fast_forward && (fast_forward_day==day_number) && (time_of_day > day_start)) {
         fast_forward = false;
         pan_to_colony = false;
+        this->player.sprite.Set_Sequence(0, 0);
     }
 
     // clear background
@@ -349,14 +356,25 @@ bool World_State::On_Action_Event(Action_Event action) {
     }
     
     if (action.pressed && !fast_forward) {
-        if (action.action == Action_X) {
-            this->player.sprite.Set_Sequence(0, 0);
-            return true;
-        } else if (action.action == Action_Y) {
-            this->player.sprite.Set_Sequence(1, 0);
+        if (action.action == Action_Y) {
+            // hibernate
+            if (can_hibernate) {
+                this->player.sprite.Set_Sequence(1, 0);
+                Next_Day();
+                return true;
+            }
+            return false;
+        } else if (action.action == Action_X) {
+            // Dash Left
+            this->player.sprite.Set_Sequence(2, 0);
             return true;
         } else if (action.action == Action_B) {
-            this->player.sprite.Set_Sequence(2, 0);
+            // Dash Right
+            this->player.sprite.Set_Sequence(3, 0);
+            return true;
+        } else if (action.action == Action_A) {
+            // Dash Down
+            this->player.sprite.Set_Sequence(4, 0);
             return true;
         }
     
@@ -411,6 +429,7 @@ bool World_State::On_Action_Event(Action_Event action) {
                     log_info("Going to sleep!");
                     bool allowed_to_sleep = true;
                     if (allowed_to_sleep) {
+                        this->player.sprite.Set_Sequence(1, 0);
                         Next_Day();
                     }
                 } break;
@@ -524,5 +543,6 @@ void World_State::Death() {
 
     pan_to_colony = true;
 
+    this->player.sprite.Set_Sequence(1, 0);
     Next_Day();
 }

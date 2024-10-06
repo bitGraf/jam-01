@@ -3,7 +3,8 @@
     "Abilities": [
         {"None": 0},
         {"Hibernate": 1},
-        {"Dash": 2}
+        {"Dash": 2},
+        {"Ability_3": 4}
     ],
     "Upgrades": [
         {

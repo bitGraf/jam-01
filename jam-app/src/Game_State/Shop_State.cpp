@@ -21,12 +21,6 @@ extern Game_App g_game;
 #include <json.hpp>
 using json = nlohmann::json;
 
-enum Ability_Enum {
-    Ability_None = 0,
-    Ability_Hibernate = 1,
-    Ability_Dash = 2
-};
-
 const char* Ability_Names[] = {
     "<none>",
     "Hibernate",
@@ -245,6 +239,9 @@ bool Shop_State::On_Action_Event(Action_Event action) {
 
                 handover.dig_speed += upgrade.speed;
                 handover.dig_strength += upgrade.strength;
+                handover.extraction += upgrade.extraction;
+                handover.abilities |= upgrade.ability;
+                
                 //upgrade.name = "Bought: " + upgrade.name;
             }
 

@@ -100,6 +100,8 @@ private:
     uint8 dig_speed;    // speed at which you break them
     uint8 extraction;
     uint8 abilities;
+    bool can_hibernate;
+    bool can_dash;
 
     // Hunger
     real32 hunger;
@@ -153,3 +155,12 @@ private:
     // handles to the game state
     Shop_Handover& handover;
 };
+
+enum Ability_Enum {
+    Ability_None = 0,
+    Ability_Hibernate = 1,
+    Ability_Dash = 2
+};
+
+#define ABILITY_HIBERNATE 0x01
+#define ABILITY_DASH 0x02
