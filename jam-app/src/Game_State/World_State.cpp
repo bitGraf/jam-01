@@ -111,25 +111,36 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
         colony_hunger-=1.0;
     }
 
-    // Get stick input
-    real32 stick_x = 0.0, stick_y = 0.0;
-    
-    // left stick -> player movement
-    stick_x =  1.0 * g_game.GetAxes()->axes[Axis_Left_Horiz];
-    stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Left_Vert];
-    laml::Vec2 move_dir = laml::normalize(laml::Vec2(stick_x, stick_y));
-    laml::Vec2 search_pos = player.world_pos + move_dir*0.55;
-    laml::Vec2 player_new_pos = player.world_pos + move_dir * (move_speed * dt);
-
-    player.world_pos = player_new_pos;
-
+    // player movement
+    laml::Vec2 player_new_pos = player.world_pos;
     if (falling) {
         fall_speed += 9.81 * dt;
         if (fall_speed > max_fall_speed) fall_speed = max_fall_speed;
-        player.world_pos = player.world_pos + laml::Vec2(0.0, fall_speed)*dt;
+        //player_new_pos = player_new_pos + laml::Vec2(0.0, fall_speed)*dt;
     }
     
-    #if 0
+    // left stick -> player movement
+    laml::Vec2 move_dir = laml::normalize(laml::Vec2(g_game.GetAxes()->axes[Axis_Left_Horiz], 
+                                                    -g_game.GetAxes()->axes[Axis_Left_Vert]));
+    player_new_pos = player_new_pos + move_dir * (move_speed * dt);
+
+    // check if new position is valid
+    bool valid = false;
+
+    int16 new_player_tile_x = floor(player_new_pos.x);
+    int16 new_player_tile_y = floor(player_new_pos.y);
+    uint8 result = Move_Entity(player_tile_x, player_tile_y, new_player_tile_x-player_tile_x, new_player_tile_y-player_tile_y);
+
+    if (result == MOVE_POSSIBLE || result == MOVE_AND_BREAK) {
+        valid = true;
+    }
+
+    // if valid move, then set new position
+    if (valid) {
+        player.world_pos = player_new_pos;
+    }   
+    
+#if 0
     uint8 reason = Move_Entity(player.world_pos, player_new_pos);
     switch (reason) {
         case MOVE_POSSIBLE: {
@@ -158,7 +169,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
             }
         } break;
     }
-    #endif
+#endif
 
     // triggers -> rotate sprite
     real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
@@ -167,8 +178,8 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     player.angle = laml::map(player.angle, 0.0, 360.0);
 
     // right stick -> camera movement
-    stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
-    stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
+    real32 stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
+    real32 stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
     world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (1500.0 * dt);
     if (world.cam_world_pos.y < (g_window_height)) {
         world.cam_world_pos.y = g_window_height;
@@ -204,13 +215,13 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_Rect point = {(int)p.x-2, (int)p.y-2, 4, 4};
     SDL_RenderFillRect(renderer, &point);
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-    pp = search_pos * laml::Vec2(world.grid_size_x, world.grid_size_y);
-    p = world.Get_Screen_Pos(pp);
-    int16 search_x = (pp.x + 16.0) / world.grid_size_x;
-    int16 search_y = (pp.y + 16.0) / world.grid_size_y;
-    point = {(int)p.x-2, (int)p.y-2, 4, 4};
-    SDL_RenderFillRect(renderer, &point);
+    //SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    //pp = search_pos * laml::Vec2(world.grid_size_x, world.grid_size_y);
+    //p = world.Get_Screen_Pos(pp);
+    //int16 search_x = (pp.x + 16.0) / world.grid_size_x;
+    //int16 search_y = (pp.y + 16.0) / world.grid_size_y;
+    //point = {(int)p.x-2, (int)p.y-2, 4, 4};
+    //SDL_RenderFillRect(renderer, &point);
 
     SDL_Rect rect = { 4, 50, 0, 0 };
     SDL_Color color = { 255, 255, 255, 255 };
@@ -226,9 +237,9 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "Tile: <%d, %d>", player_tile_x, player_tile_y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-    snprintf(buffer, 256, "Search tile: <%d, %d>", search_x, search_y);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
+    //snprintf(buffer, 256, "Search tile: <%d, %d>", search_x, search_y);
+    //Render_Text(renderer, g_small_font, color, rect, buffer);
+    //rect.y += g_font_size_small;
 
 #if 0
     snprintf(buffer, 256, "Colony: %d", colony_size);
@@ -298,11 +309,6 @@ uint8 World_State::Move_Entity(laml::Vec2 start, laml::Vec2 end) {
 }
 
 uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y) {
-    if ((abs(move_x) + abs(move_y)) > 1) {
-        log_error("Move_Entity() should only move 1 block at a time");
-        return MOVE_NOT_POSSIBLE;
-    }
-
     int16 end_x = start_x + move_x;
     int16 end_y = start_y + move_y;
 
@@ -310,34 +316,7 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     uint8 end_cell = world.grid[end_x][end_y];
 
     if (end_cell == 0) {
-        // check if there are walls to support us if going upward
-        if (move_y < 0) {
-            uint8 left_wall  = world.grid[start_x-1][end_y];
-            uint8 right_wall = world.grid[start_x+1][end_y];
-
-            if (end_y == ground_level) return MOVE_POSSIBLE;
-
-            if (left_wall != 0 || right_wall != 0) {
-                // has support
-                return MOVE_POSSIBLE;
-            } else {
-                uint8 left_floor  = world.grid[start_x-1][start_y];
-                uint8 right_floor = world.grid[start_x+1][start_y];
-
-                if (left_floor != 0 || right_floor != 0) {
-                    return MOVE_POSSIBLE;
-                }
-
-                return MOVE_NOT_POSSIBLE;
-            }
-        }
-
         return MOVE_POSSIBLE;
-    }
-
-    // cannot dig upwards
-    if (move_y < 0) {
-        return MOVE_NOT_POSSIBLE;
     }
 
     if (end_cell == 2) {
