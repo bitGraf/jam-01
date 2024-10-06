@@ -185,8 +185,8 @@ bool Game_App::Run() {
     // Start game in a menu state
     Game_State* menu = new Menu_State();
     this->game_state.push(menu);
-    World_State* level1 = new World_State("data/levels/level_1.json");
-    this->Push_New_State(level1);
+    //World_State* level1 = new World_State("data/levels/level_1.json");
+    //this->Push_New_State(level1);
 
     ////////////////////////////////////////////////////////////////////////////
     // Game Event Loop
