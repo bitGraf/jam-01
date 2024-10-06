@@ -47,9 +47,9 @@ Tile_Data::Tile_Data()
  : type(0), data(0)
 {}
 
-Tile_Data::Tile_Data(uint8 t) 
- : type(t), data(0)
-{}
+//Tile_Data::Tile_Data(uint8 t) 
+// : type(t), data(0)
+//{}
 
 Tile_Data::Tile_Data(uint8 t, uint8 d) 
  : type(t), data(d)

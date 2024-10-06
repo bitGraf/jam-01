@@ -72,6 +72,8 @@ private:
 
     // Player
     Entity player;
+    uint8 dig_strength; // how tough things u can break
+    uint8 dig_speed;    // speed at which you break them
 
     // Hunger
     real32 hunger;

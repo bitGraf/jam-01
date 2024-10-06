@@ -55,8 +55,8 @@ void Menu_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
         pos.y += g_font_size_medium;
     }
 
-    const char* title_1 = "The Descendent";
-    const char* title_2 = "Bug-Descendent";
+    const char* title_1 = "The Descendant";
+    const char* title_2 = "Bug-Descendant";
     color = { 170, 150, 255, 255 };
     back_color = { 0, 0, 0, 255 };
     offset = 1;

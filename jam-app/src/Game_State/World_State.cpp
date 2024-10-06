@@ -34,25 +34,42 @@ World_State::World_State(const char* filename) {
     world.cam_world_pos.y = g_window_height - 16;
 
     world.grid.Fill(1, 0);                                                                  // fill whole with bedrock
-    world.grid.Fill(1, 1, 23, ground_level, 0, 0);                                          // empty out burrow
-    world.grid.Fill(1, ground_level+1, 23, world.grid.map_height - ground_level - 2, 2, 5); // fill rest with dirt
+    world.grid.Fill(1, 1, 23, ground_level, 0, 1);                                          // empty out burrow
+    
+    int16 max_depth = 0;
+    for (int x = 1; x < 24; x++) {
+        Tile_Data* col_data = world.grid[x];
+        for (int y = ground_level+1; y < (world.grid.map_height - 1); y++) {
+            int16 depth = y - ground_level;
+            depth = (depth < 0) ? 0 : depth;
+            max_depth = depth;
+
+            col_data[y].type = 2;
+            col_data[y].data = 1+(max_depth / 8);
+
+            if (x == 1) {
+                log_debug("depth: %d  | strength: %d", depth, col_data[y].data);
+            }
+        }
+    }
+
     world.grid.Fill(15, ground_level-4, 8, 5, 1, 0);                                        // build house
-    world.grid[15][ground_level] = Tile_Data(4);                                            // depositer
-    world.grid[14][ground_level+1] = Tile_Data(5);                                          // withdrawer
+    world.grid[15][ground_level] = Tile_Data(4,0);                                            // depositer
+    world.grid[14][ground_level+1] = Tile_Data(5,0);                                          // withdrawer
 
     int num_to_place = 20;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = Tile_Data(3);
+        world.grid[x][y] = Tile_Data(3,0);
     }
     num_to_place = 200;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = Tile_Data(1);
+        world.grid[x][y] = Tile_Data(1,0);
     }
 
     // Load sprite-sheet
@@ -60,6 +77,8 @@ World_State::World_State(const char* filename) {
     player.world_x = 6;
     player.world_y = ground_level;
     player.angle = 0.0;
+    dig_strength = 1;
+    dig_speed = 3;
 
     hunger = 0.0;
     hunger_rate = 0.001;
@@ -224,12 +243,16 @@ bool World_State::On_Action_Event(Action_Event action) {
                 this->player.world_x += move_x;
                 this->player.world_y += move_y;
                 hunger += move_cost;
+
+                world.grid[player.world_x][player.world_y].data = 1; // to denote that we have visited this place before.
             } break;
 
             case MOVE_AND_BREAK: {
                 this->player.world_x += move_x;
                 this->player.world_y += move_y;
                 hunger += break_cost;
+
+                world.grid[player.world_x][player.world_y].data = 1; // to denote that we have visited this place before.
 
                 Break_Block(player.world_x, player.world_y);
             } break;
@@ -268,26 +291,8 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     Tile_Data& end_cell = world.grid[end_x][end_y];
 
     if (end_cell.type == 0) {
-        // check if there are walls to support us if going upward
-        if (move_y < 0) {
-            Tile_Data left_wall  = world.grid[start_x-1][end_y];
-            Tile_Data right_wall = world.grid[start_x+1][end_y];
-
-            if (end_y == ground_level) return MOVE_POSSIBLE;
-
-            if (left_wall.type != 0 || right_wall.type != 0) {
-                // has support
-                return MOVE_POSSIBLE;
-            } else {
-                Tile_Data left_floor  = world.grid[start_x-1][start_y];
-                Tile_Data right_floor = world.grid[start_x+1][start_y];
-
-                if (left_floor.type != 0 || right_floor.type != 0) {
-                    return MOVE_POSSIBLE;
-                }
-
-                return MOVE_NOT_POSSIBLE;
-            }
+        if (move_y < 0 && end_cell.data != 1) {
+            return MOVE_NOT_POSSIBLE;
         }
 
         return MOVE_POSSIBLE;
@@ -299,8 +304,10 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     }
 
     if (end_cell.type == 2) { // dirt
-        end_cell.data--;
-        if (end_cell.data <= 0) 
+        if (dig_speed > end_cell.data) end_cell.data = 0;
+        else end_cell.data -= dig_speed;
+
+        if (end_cell.data == 0) 
             return MOVE_AND_BREAK;
         else
             return MOVE_NOT_POSSIBLE;
@@ -330,7 +337,7 @@ uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
         carrying_food++;
     }
 
-    world.grid[world_x][world_y] = 0;
+    world.grid[world_x][world_y].type = 0;
 
     return 0;
 }

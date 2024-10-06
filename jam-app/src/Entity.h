@@ -5,7 +5,7 @@
 
 struct Tile_Data {
     Tile_Data();
-    Tile_Data(uint8 t);
+    //Tile_Data(uint8 t);
     Tile_Data(uint8 t, uint8 d);
 
     uint8 type;
