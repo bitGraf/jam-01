@@ -30,8 +30,8 @@ World_State::World_State(const char* filename) {
     // Initialize world origin
     world.origin = laml::Vec2(0.0, g_window_height);
     world.Init_Grid(25, 60, 32, 32);
-    world.cam_world_pos.x = -16;
-    world.cam_world_pos.y = g_window_height - 16;
+    world.cam_world_pos.x = 0;
+    world.cam_world_pos.y = g_window_height;
 
     world.grid.Fill(1);
     world.grid.Fill(1, 1, 23, ground_level, 0);
@@ -57,10 +57,14 @@ World_State::World_State(const char* filename) {
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
-    player.world_x = 6;
-    player.world_y = ground_level;
+    player.world_pos = laml::Vec2(6.5, ground_level-1.5);
     player.angle = 0.0;
+    fall_speed = 0.0;
+    max_fall_speed = 6.0;
+    move_speed = 3.0;
+    falling = true;
 
+    // hunger
     hunger = 0.0;
     hunger_rate = 0.001;
     move_cost = 0.002;
@@ -81,8 +85,14 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_SetRenderDrawColor(renderer, 120, 90, 255, 255);
     SDL_RenderClear(renderer);
 
-    // Draw sprite
-    int32 depth = player.world_y - ground_level;
+    static real32 time = 0.0;
+    time += dt;
+
+    int16 player_tile_x = floor(player.world_pos.x);
+    int16 player_tile_y = floor(player.world_pos.y);
+    int32 depth = player_tile_y - ground_level;
+
+    // Update Hunger
     bool in_colony = (depth <= 0);
     player.sprite.Update(dt);
     hunger += (hunger_rate * dt);
@@ -100,26 +110,71 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
         colony_food--;
         colony_hunger-=1.0;
     }
+
+    // Get stick input
     real32 stick_x = 0.0, stick_y = 0.0;
     
-    //stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
-    //stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
-    //player.world_x += stick_x * (1.0 * dt);
-    //player.world_y += stick_y * (1.0 * dt);
+    // left stick -> player movement
+    stick_x =  1.0 * g_game.GetAxes()->axes[Axis_Left_Horiz];
+    stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Left_Vert];
+    laml::Vec2 move_dir = laml::normalize(laml::Vec2(stick_x, stick_y));
+    laml::Vec2 search_pos = player.world_pos + move_dir*0.55;
+    laml::Vec2 player_new_pos = player.world_pos + move_dir * (move_speed * dt);
 
+    player.world_pos = player_new_pos;
+
+    if (falling) {
+        fall_speed += 9.81 * dt;
+        if (fall_speed > max_fall_speed) fall_speed = max_fall_speed;
+        player.world_pos = player.world_pos + laml::Vec2(0.0, fall_speed)*dt;
+    }
+    
+    #if 0
+    uint8 reason = Move_Entity(player.world_pos, player_new_pos);
+    switch (reason) {
+        case MOVE_POSSIBLE: {
+            this->player.world_pos = player_new_pos;
+            hunger += move_cost;
+        } break;
+
+        case MOVE_AND_BREAK: {
+            this->player.world_pos = player_new_pos;
+            hunger += break_cost;
+
+            Break_Block(player.world_x, player.world_y);
+        } break;
+
+        case DEPOSIT_FOOD: {
+            if (this->carrying_food > 0) {
+                this->carrying_food--;
+                this->colony_food++;
+            }
+        } break;
+
+        case WITHDRAW_FOOD: {
+            if (this->colony_food > 0) {
+                this->colony_food--;
+                this->carrying_food++;
+            }
+        } break;
+    }
+    #endif
+
+    // triggers -> rotate sprite
     real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
     real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
     player.angle += (r_trigger - l_trigger) * 360.0*dt;
     player.angle = laml::map(player.angle, 0.0, 360.0);
 
+    // right stick -> camera movement
     stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
     stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
     world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (1500.0 * dt);
-    if (world.cam_world_pos.y < (g_window_height - 16)) {
-        world.cam_world_pos.y = g_window_height - 16;
+    if (world.cam_world_pos.y < (g_window_height)) {
+        world.cam_world_pos.y = g_window_height;
     }
-    if (world.cam_world_pos.y > (60*32 - 16)) {
-        world.cam_world_pos.y = (60*32 - 16);
+    if (world.cam_world_pos.y > (60*32)) {
+        world.cam_world_pos.y = (60*32);
     }
 
 
@@ -134,16 +189,48 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     // camera
     Draw_Sprite(renderer, world.sprite_cam, world.Get_Screen_Pos(world.cam_world_pos), 0.0);
 
-    // sprite
-    laml::Vec2 world_pos = world.Get_World_Pos(player.world_x, player.world_y);
-    laml::Vec2 screen_pos = world.Get_Screen_Pos(player.world_x, player.world_y);
-    Draw_Sprite(renderer, player.sprite, screen_pos, player.angle);
+    // player sprite
+    Draw_Sprite(renderer, player.sprite, world.Get_Screen_Pos(player.world_pos * laml::Vec2(world.grid_size_x, world.grid_size_y)), player.angle);
+
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    laml::Vec2 tile_pos = world.Get_Screen_Pos(laml::Vec2(player_tile_x*world.grid_size_x, player_tile_y*world.grid_size_y));
+    SDL_Rect current_tile = {(int)tile_pos.x, (int)tile_pos.y, 32, 32};
+    SDL_RenderDrawRect(renderer, &current_tile);
+
+    laml::Vec2 pp = player.world_pos * laml::Vec2(world.grid_size_x, world.grid_size_y);
+    int16 curr_x = (pp.x + 16.0) / world.grid_size_x;
+    int16 curr_y = (pp.y + 16.0) / world.grid_size_y;
+    laml::Vec2 p = world.Get_Screen_Pos(pp);
+    SDL_Rect point = {(int)p.x-2, (int)p.y-2, 4, 4};
+    SDL_RenderFillRect(renderer, &point);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    pp = search_pos * laml::Vec2(world.grid_size_x, world.grid_size_y);
+    p = world.Get_Screen_Pos(pp);
+    int16 search_x = (pp.x + 16.0) / world.grid_size_x;
+    int16 search_y = (pp.y + 16.0) / world.grid_size_y;
+    point = {(int)p.x-2, (int)p.y-2, 4, 4};
+    SDL_RenderFillRect(renderer, &point);
 
     SDL_Rect rect = { 4, 50, 0, 0 };
     SDL_Color color = { 255, 255, 255, 255 };
     SDL_Color back_color = { 0, 0, 0, 255 };
     char buffer[256];
 
+    snprintf(buffer, 256, "Speed: %.3f", fall_speed);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "World Position: <%.2f, %.2f>", player.world_pos.x, player.world_pos.y);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "Tile: <%d, %d>", player_tile_x, player_tile_y);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "Search tile: <%d, %d>", search_x, search_y);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+
+#if 0
     snprintf(buffer, 256, "Colony: %d", colony_size);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
@@ -163,21 +250,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "  Food: %d", carrying_food);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-
     /*
-    // world info
-    snprintf(buffer, 256, "Origin: <%.0f, %.0f>", world.origin.x, world.origin.y);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
-    snprintf(buffer, 256, "Camera: <%.0f, %.0f>", world.cam_world_pos.x, world.cam_world_pos.y);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
-    snprintf(buffer, 256, "iWorld: <%d, %d>", player.world_x, player.world_y);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
-    snprintf(buffer, 256, "World: <%.0f, %.0f>", world_pos.x, world_pos.y);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
     snprintf(buffer, 256, "Screen: <%.0f, %.0f>", screen_pos.x, screen_pos.y);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
@@ -187,6 +260,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "Depth: %d", depth);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     */
+   #endif
 }
 
 bool World_State::On_Action_Event(Action_Event action) {
@@ -204,55 +278,23 @@ bool World_State::On_Action_Event(Action_Event action) {
         this->player.sprite.Set_Sequence(2, 0);
         return true;
     }
-    
-    int16 move_x = 0, move_y = 0;
-    if (action.action == Action_Right && action.pressed) {
-        move_x = 1;
-    } else if (action.action == Action_Left && action.pressed) {
-        move_x = -1;
-    } else if (action.action == Action_Up && action.pressed) {
-        if (player.world_y > ground_level)
-            move_y = -1;
-    } else if (action.action == Action_Down && action.pressed) {
-        move_y = 1;
-    }
-
-    if (move_x || move_y) {
-        uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y);
-        switch (reason) {
-            case MOVE_POSSIBLE: {
-                this->player.world_x += move_x;
-                this->player.world_y += move_y;
-                hunger += move_cost;
-            } break;
-
-            case MOVE_AND_BREAK: {
-                this->player.world_x += move_x;
-                this->player.world_y += move_y;
-                hunger += break_cost;
-
-                Break_Block(player.world_x, player.world_y);
-            } break;
-
-            case DEPOSIT_FOOD: {
-                if (this->carrying_food > 0) {
-                    this->carrying_food--;
-                    this->colony_food++;
-                }
-            } break;
-
-            case WITHDRAW_FOOD: {
-                if (this->colony_food > 0) {
-                    this->colony_food--;
-                    this->carrying_food++;
-                }
-            } break;
-        }
-
-        return true;
-    }
 
     return false;
+}
+
+uint8 World_State::Move_Entity(laml::Vec2 start, laml::Vec2 end) {
+    // starting tile
+    int16 start_x = int16(start.x*world.grid_size_x) / world.grid_size_x;
+    int16 start_y = int16(start.y*world.grid_size_y) / world.grid_size_y;
+
+    // ending tile
+    int16 end_x = int16(end.x*world.grid_size_x) / world.grid_size_x;
+    int16 end_y = int16(end.y*world.grid_size_y) / world.grid_size_y;
+
+    int16 move_x = end_x - start_x;
+    int16 move_y = end_y - start_y;
+
+    return Move_Entity(start_x, start_y, move_x, move_y);
 }
 
 uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y) {

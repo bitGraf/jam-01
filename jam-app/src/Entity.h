@@ -48,5 +48,5 @@ struct Entity {
     Sprite sprite;
     real32 angle;
 
-    int16 world_x, world_y;
+    laml::Vec2 world_pos;   // float position, in tile coordinates. [0.5,0.5] is center of tile
 };

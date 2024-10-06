@@ -63,6 +63,7 @@ struct World_State : public Game_State {
 
 private:
     uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
+    uint8 Move_Entity(laml::Vec2 start, laml::Vec2 end);
     uint8 Break_Block(int16 world_x, int16 world_y);
 
 private:
@@ -72,6 +73,10 @@ private:
 
     // Player
     Entity player;
+    real32 move_speed;
+    real32 fall_speed;
+    real32 max_fall_speed;
+    bool falling;
 
     // Hunger
     real32 hunger;

@@ -92,14 +92,17 @@ void Draw_Tilemap(SDL_Renderer* renderer, const Tilemap* map, const Indexed_Tile
 
     SDL_PixelFormat* pf = SDL_AllocFormat(g_window_pixel_format);
 
+    int16 x_anchor = 0;
+    int16 y_anchor = 0;
+
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     for (int x = 0; x < num_x; x++) {
         const uint8* col_data = map->operator[](x);
-        dst_rect.x = (screen_pos.x + tile_width*x) - tile_width/2;
+        dst_rect.x = (screen_pos.x + tile_width*x) - x_anchor;
 
         for (int y = 0; y < num_y; y++) {
             const uint8 cell = col_data[y];
-            dst_rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
+            dst_rect.y = (screen_pos.y + tile_height*y) - y_anchor;
 
             if (cell) {
                 Sprite_Frame frame = tilesheet->Get_Sprite_Frame(cell);
