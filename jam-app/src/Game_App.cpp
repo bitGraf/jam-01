@@ -298,18 +298,20 @@ bool Game_App::Run() {
         Fixed_Update_And_Render(dt);
         
         // Draw version number
-        Render_Text(renderer, g_small_font, font_color, {0,0,0,0}, "Version: %d", version_number);
-        Render_Text(renderer, g_small_font, font_color, {0,g_font_size_small,0,0}, "Press [o]! :cat_smirk:");
+        //Render_Text(renderer, g_small_font, font_color, {0,0,0,0}, "Version: %d", version_number);
+        //Render_Text(renderer, g_small_font, font_color, {0,g_font_size_small,0,0}, "Press [o]! :cat_smirk:");
 
         ///////////////////////////////////////////////////////////////////////////////////////////
 
         // draw frame counters
+        /*
         SDL_Rect dest = {g_window_width-250, 0, 0, 0};
         Render_Text(renderer, g_small_font, font_color, dest, "Frame: #%llu", frame_number);
         dest.y += g_font_size_small;
         Render_Text(renderer, g_small_font, font_color, dest, "FPS: %5.1f", fps);
         dest.y += g_font_size_small;
         Render_Text(renderer, g_small_font, font_color, dest, "Avg FPS: %7.3f", fps_avg);
+        */
 
         uint64 WorkCounter = SDL_GetPerformanceCounter();
         real32 WorkSecondsElapsed = ((real64)(WorkCounter - LastCounter)) / ((real64)SDL_GetPerformanceFrequency());

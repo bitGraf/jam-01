@@ -1,53 +1,49 @@
 {
     "Title": "Upgrade your mouthparts",
+    "Abilities": [
+        {"None": 0},
+        {"Hibernate": 1},
+        {"Dash": 2}
+    ],
     "Upgrades": [
         {
-            "Name": "upgrade #1",
-            "Cost": 1,
-            "Speed": 1,
-            "Strength": 0
-        },
-        {
-            "Name": "upgrade #2",
-            "Cost": 1,
-            "Speed": 1,
-            "Strength": 0
-        },
-        {
-            "Name": "upgrade #3",
-            "Cost": 5,
-            "Speed": 2,
-            "Strength": 0
-        },
-        {
-            "Name": "upgrade #4",
+            "Name": "Stronger Mandibles 1",
             "Cost": 10,
+            "Speed": 1,
+            "Description": "Stronger mandibles to dig faster"
+        },
+        {
+            "Name": "Stronger Mandibles 2",
+            "Cost": 25,
             "Speed": 2,
-            "Strength": 1
+            "Description": "Stronger mandibles to dig faster"
         },
         {
-            "Name": "upgrade #5",
-            "Cost": 50,
-            "Speed": 3,
-            "Strength": 0
+            "Name": "Potent Enzymes",
+            "Cost": 25,
+            "Extraction": 2,
+            "Description": "Excrete more potent enzymes (such as amylase and proteinases) from the stylet, allowing more efficient plany sap extraction."
         },
         {
-            "Name": "upgrade #6",
+            "Name": "Sharper maxillae",
             "Cost": 100,
-            "Speed": 5,
-            "Strength": 1
+            "Speed": 3,
+            "Strength": 1,
+            "Description": "The maxillae (along with the mandibles) form the \"stylet\", and are used to pierce tissues and other materials, allowing for the injection of enzymes to break down food. Allows you the break harder materials."
         },
         {
-            "Name": "upgrade #7",
+            "Name": "Hibernation",
+            "Cost": 200,
+            "Ability": 1,
+            "Description": "Able to enter a hibernation state, allowing you to survive the night outside of the colony"
+        },
+        {
+            "Name": "Appendicular Muscles",
             "Cost": 500,
             "Speed": 5,
-            "Strength": 1
-        },
-        {
-            "Name": "upgrade #8",
-            "Cost": 1000,
-            "Speed": 10,
-            "Strength": 3
+            "Strength": 1,
+            "Ability": 2,
+            "Description": "Stronger leg muscles allow you to tunnel quickly in a direction"
         }
     ]
 }

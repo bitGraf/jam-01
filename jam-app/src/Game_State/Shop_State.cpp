@@ -9,6 +9,8 @@ extern TTF_Font* g_large_font;
 extern int32 g_font_size_large;
 extern TTF_Font* g_medium_font;
 extern int32 g_font_size_medium;
+extern TTF_Font* g_small_font;
+extern int32 g_font_size_small;
 const int32 offset = 2;
 
 #include "Game_App.h"
@@ -19,8 +21,36 @@ extern Game_App g_game;
 #include <json.hpp>
 using json = nlohmann::json;
 
-Shop_State::Shop_State(int16& food, uint8& dig_speed, uint8& dig_strength)
- : food(food), dig_speed(dig_speed), dig_strength(dig_strength) {
+enum Ability_Enum {
+    Ability_None = 0,
+    Ability_Hibernate = 1,
+    Ability_Dash = 2
+};
+
+const char* Ability_Names[] = {
+    "<none>",
+    "Hibernate",
+    "Dash"
+};
+
+Upgrade::Upgrade() {
+    name = "<upgrade>";
+    description = "<description>";
+    cost = 0;
+    speed = 0;
+    strength = 0;
+    extraction = 0;
+    ability = Ability_None;
+
+    bought = true;
+}
+
+Shop_Handover::Shop_Handover(int16& food,uint8& dig_speed,uint8& dig_strength,uint8& extraction,uint8& abilities)
+ : food(food), dig_speed(dig_speed), dig_strength(dig_strength), extraction(extraction), abilities(abilities)
+{}
+
+Shop_State::Shop_State(Shop_Handover& handover)
+ : handover(handover) {
     log_trace("Shop_State::Shop_State()");
 
     current_menu_item = 0;
@@ -44,7 +74,7 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_Color select_color = {255, 255, 0, 255};
     SDL_Color bought_color = {255, 0, 255, 255};
 
-    char buffer[32];
+    char buffer[256];
 
     // Shop Title
     Render_Text(renderer, g_large_font, back_color, rect, shop_title.c_str());
@@ -55,24 +85,34 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     // Print food/stats
     rect.y = 150;
     rect.x = 400;
-    snprintf(buffer, 32, "Food: %d", food);
+    snprintf(buffer, 32, "Food: %d", handover.food);
+    Render_Text(renderer, g_medium_font, back_color, rect, buffer);
+    rect.x -= offset;
+    rect.y -= offset;
+    Render_Text(renderer, g_medium_font, color, rect, buffer);
+    rect.x += offset;
+    rect.y += (g_font_size_medium - offset);
+    snprintf(buffer, 32, "Dig Speed: %d", handover.dig_speed);
+    Render_Text(renderer, g_medium_font, back_color, rect, buffer);
+    rect.x -= offset;
+    rect.y -= offset;
+    Render_Text(renderer, g_medium_font, color, rect, buffer);
+    rect.x += offset;
+    rect.y += (g_font_size_medium - offset);
+    snprintf(buffer, 32, "Dig Strength: %d", handover.dig_strength);
     Render_Text(renderer, g_medium_font, back_color, rect, buffer);
     rect.x -= offset;
     rect.y -= offset;
     Render_Text(renderer, g_medium_font, color, rect, buffer);
     rect.y += (g_font_size_medium - offset);
-    snprintf(buffer, 32, "Dig Speed: %d", dig_speed);
+    rect.x += offset;
+    snprintf(buffer, 32, "Extraction: %d", handover.extraction);
     Render_Text(renderer, g_medium_font, back_color, rect, buffer);
     rect.x -= offset;
     rect.y -= offset;
     Render_Text(renderer, g_medium_font, color, rect, buffer);
     rect.y += (g_font_size_medium - offset);
-    snprintf(buffer, 32, "Dig Strength: %d", dig_strength);
-    Render_Text(renderer, g_medium_font, back_color, rect, buffer);
-    rect.x -= offset;
-    rect.y -= offset;
-    Render_Text(renderer, g_medium_font, color, rect, buffer);
-    rect.y += (g_font_size_medium - offset);
+    rect.x += offset;
 
     // Start Menu options, begining with Leave
     rect.y = 150;
@@ -143,6 +183,31 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
             Render_Text(renderer, g_medium_font, color, rect, buffer);
             rect.y += (g_font_size_medium - offset);
         }
+
+        if (upgrade.extraction != 0) {
+            snprintf(buffer, 32, "Extraction +%d", upgrade.extraction);
+            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_medium_font, color, rect, buffer);
+            rect.y += (g_font_size_medium - offset);
+        }
+
+        if (upgrade.ability != 0) {
+            snprintf(buffer, 32, "[%s]", Ability_Names[upgrade.ability]);
+            Render_Text(renderer, g_medium_font, back_color, rect, buffer);
+            rect.x -= offset;
+            rect.y -= offset;
+            Render_Text(renderer, g_medium_font, color, rect, buffer);
+            rect.y += (g_font_size_medium - offset);
+        }
+
+        snprintf(buffer, 256, "%s", upgrade.description.c_str());
+        Render_Text(renderer, g_small_font, back_color, rect, buffer);
+        rect.x -= offset;
+        rect.y -= offset;
+        Render_Text(renderer, g_small_font, color, rect, buffer);
+        rect.y += (g_font_size_small - offset);
     }
 }
 
@@ -174,12 +239,12 @@ bool Shop_State::On_Action_Event(Action_Event action) {
             Upgrade& upgrade = upgrades[upgrade_num];
             log_info("Enter pressed [%s]", upgrade.name.c_str());
 
-            if (!upgrade.bought && food >= upgrade.cost) {
-                food -= upgrade.cost;
+            if (!upgrade.bought && handover.food >= upgrade.cost) {
+                handover.food -= upgrade.cost;
                 upgrade.bought = true;
 
-                dig_speed += upgrade.speed;
-                dig_strength += upgrade.strength;
+                handover.dig_speed += upgrade.speed;
+                handover.dig_strength += upgrade.strength;
                 //upgrade.name = "Bought: " + upgrade.name;
             }
 
@@ -197,15 +262,6 @@ void Shop_State::Leave_Shop() {
     //}
 
     g_game.Pop_State();
-}
-
-Upgrade::Upgrade() {
-    name = "<upgrade>";
-    cost = 0;
-    speed = 0;
-    strength = 0;
-
-    bought = true;
 }
 
 bool Shop_State::Read_Config() {
@@ -236,10 +292,15 @@ bool Shop_State::Read_Config() {
             json up = upgrade_list[n];
 
             Upgrade upgrade;
-            upgrade.name     = up["Name"].get<std::string>();
-            upgrade.cost     = up["Cost"].get<int16>();
-            upgrade.speed    = up["Speed"].get<uint8>();
-            upgrade.strength = up["Strength"].get<uint8>();
+            upgrade.name        = up["Name"].get<std::string>();        // required
+            upgrade.cost        = up["Cost"].get<int16>();              // required
+            upgrade.description = up["Description"].get<std::string>(); // required
+
+            if (up.find("Speed") != up.end())       upgrade.speed = up["Speed"].get<uint8>();
+            if (up.find("Strength") != up.end())    upgrade.strength = up["Strength"].get<uint8>();
+            if (up.find("Extraction") != up.end())  upgrade.extraction = up["Extraction"].get<uint8>();
+            if (up.find("Ability") != up.end())     upgrade.ability = up["Ability"].get<uint8>();
+            
             upgrade.bought   = false;
             this->upgrades.push_back(upgrade);
         }
@@ -270,9 +331,12 @@ bool Shop_State::Write_Config() {
             json up = {
                 {"Name", upgrade.name},
                 {"Cost", upgrade.cost},
-                {"Speed", upgrade.speed},
-                {"Strength", upgrade.strength}
+                {"Description", upgrade.description},
             };
+            if (upgrade.speed != 0)      up["Speed"] = upgrade.speed;
+            if (upgrade.strength != 0)   up["Strength"] = upgrade.strength;
+            if (upgrade.extraction != 0) up["Extraction"] = upgrade.extraction;
+            if (upgrade.ability != 0)    up["Ability"] = upgrade.ability;
 
             upgrade_list.push_back(up);
         }

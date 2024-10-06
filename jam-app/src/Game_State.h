@@ -55,6 +55,16 @@ private:
     std::vector<std::string> menu_options;
 };
 
+struct Shop_Handover {
+    Shop_Handover(int16& food,uint8& dig_speed,uint8& dig_strength,uint8& extraction,uint8& abilities);
+
+    int16& food;
+    uint8& dig_speed;
+    uint8& dig_strength;
+    uint8& extraction;
+    uint8& abilities;
+};
+
 struct World_State : public Game_State {
     World_State(const char* filename);
     virtual ~World_State() override;
@@ -70,6 +80,8 @@ private:
     void Death();
 
 private:
+    Shop_Handover handover;
+
     // World
     World world;
     Gradient time_gradient;
@@ -78,6 +90,7 @@ private:
     uint8 day_number;
     uint8 fast_forward_day;
 
+    real32 fast_forward_ratio;
     bool pan_to_colony;
     bool fast_forward;
 
@@ -85,6 +98,8 @@ private:
     Entity player;
     uint8 dig_strength; // how tough things u can break
     uint8 dig_speed;    // speed at which you break them
+    uint8 extraction;
+    uint8 abilities;
 
     // Hunger
     real32 hunger;
@@ -107,15 +122,18 @@ struct Upgrade {
     Upgrade();
 
     std::string name;
+    std::string description;
     int16 cost;
     uint8 speed;
     uint8 strength;
+    uint8 extraction;
+    uint8 ability;
 
     bool bought;
 };
 
 struct Shop_State : public Game_State {
-    Shop_State(int16& food, uint8& dig_speed, uint8& dig_strength);
+    Shop_State(Shop_Handover& handover);
     virtual ~Shop_State() override;
 
     virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
@@ -133,7 +151,5 @@ private:
     uint8 current_menu_item;
 
     // handles to the game state
-    int16& food;
-    uint8& dig_speed;
-    uint8& dig_strength;
+    Shop_Handover& handover;
 };

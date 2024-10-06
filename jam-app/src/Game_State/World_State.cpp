@@ -33,12 +33,14 @@ enum Move_Reason {
     SLEEP
 };
 
-World_State::World_State(const char* filename) {
+World_State::World_State(const char* filename) 
+ : handover(colony_food, dig_speed, dig_strength, extraction, abilities)
+{
     log_trace("World_State::World_State(%s)", filename);
     level_name = filename;
 
     ground_level = 8;
-    spawn_x = 6;
+    spawn_x = 13;
     spawn_y = ground_level;
 
     // Initialize world origin
@@ -69,6 +71,8 @@ World_State::World_State(const char* filename) {
         }
     }
 
+    world.grid.Fill(1, ground_level+1, 4, 1, Tile_Data(1));  // put floors down in burrow
+    world.grid.Fill(11, ground_level+1, 13, 1, Tile_Data(1));  // put floors down in burrow
     world.grid.Fill(15, ground_level-4, 8, 5, Tile_Data(1));  // build house
     world.grid[15][ground_level] = Tile_Data(4);    // depositer
     world.grid[14][ground_level+1] = Tile_Data(5);  // withdrawer
@@ -105,16 +109,18 @@ World_State::World_State(const char* filename) {
 
     // Load sprite-sheet
     player.sprite.Load_Sprite_Sheet_From_Meta(g_game.GetRenderer(), "data/thingy.sprite");
-    player.world_x = 6;
-    player.world_y = ground_level;
+    player.world_x = spawn_x;
+    player.world_y = spawn_y;
     player.angle = 0.0;
     dig_strength = 1;
     dig_speed = 1;
+    extraction = 1;
 
     // day-night cycles
     time_gradient.Load_From_Image("data/sky_gradient.png");
     time_gradient.Set_Mapping_Range(0.0, 24.0);
     time_rate = 0.5; // 30 mins every second?
+    fast_forward_ratio = 10.0f;
     time_of_day = day_start;
     day_number = 1;
     fast_forward = false;
@@ -127,8 +133,8 @@ World_State::World_State(const char* filename) {
     break_cost = 0.01;
     colony_hunger = 0.0;
     carrying_food = 0;
-    colony_food = 100;
-    colony_size = 100;
+    colony_food = 5;
+    colony_size = 5;
     field_eat_ratio = 0.25;
     colony_eat_ratio = 1.0;
 
@@ -154,7 +160,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
 
     // Update Time
-    real32 time_advance_rate = fast_forward ? (time_rate*10.0f) : time_rate;
+    real32 time_advance_rate = fast_forward ? (time_rate*fast_forward_ratio) : time_rate;
     if (!fast_forward) time_advance_rate *= 1.0f + (r_trigger*9.0); // not pressed->1.0, max press->10.0
     time_of_day += time_advance_rate * dt;
     if (time_of_day > 24.0f) {
@@ -207,14 +213,14 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     //player.world_x += l_stick_x * (1.0 * dt);
     //player.world_y += l_stick_y * (1.0 * dt);
 
-    player.angle += (r_trigger - l_trigger) * 360.0*dt;
-    player.angle = laml::map(player.angle, 0.0, 360.0);
+    //player.angle += (r_trigger - l_trigger) * 360.0*dt;
+    //player.angle = laml::map(player.angle, 0.0, 360.0);
 
     if (pan_to_colony) {
         real32 start_time = time_of_day;
         real32 end_time = day_start;
         real32 ttg = (start_time > day_end) ? (24.0 - start_time + end_time) : (end_time - start_time);
-        real32 ttg_s = ttg / (10.0f*time_rate);
+        real32 ttg_s = ttg / (fast_forward_ratio*time_rate);
         real32 ey = (world.cam_world_pos.y - cam_min_y);
         real32 rate = (ey / ttg_s);
 
@@ -280,6 +286,9 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
     snprintf(buffer, 256, "Dig Strength: %d", this->dig_strength);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "Extraction: %d", this->extraction);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
 
@@ -407,7 +416,7 @@ bool World_State::On_Action_Event(Action_Event action) {
                 } break;
 
                 case ENTER_SHOP: {
-                    Game_State* new_state = new Shop_State(colony_food, dig_speed, dig_strength);
+                    Game_State* new_state = new Shop_State(handover);
                     g_game.Push_New_State(new_state);
                 }
             }
@@ -489,7 +498,7 @@ uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
 
     if (cell.type == 3) {
         log_info("Got some goo");
-        carrying_food += cell.data_2;
+        carrying_food += (cell.data_2 * extraction * extraction);
     }
 
     world.grid[world_x][world_y].type = 0;
@@ -509,6 +518,7 @@ void World_State::Death() {
     
     player.world_x = spawn_x;
     player.world_y = spawn_y;
+    player.angle = 0.0;
 
     log_info("Spawning as new bug");
 
