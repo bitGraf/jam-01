@@ -44,15 +44,19 @@ void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 
 // Tilemap
 
 Tile_Data::Tile_Data() 
- : type(0), data(0)
+ : type(0), data_1(0), data_2(0)
 {}
 
-//Tile_Data::Tile_Data(uint8 t) 
-// : type(t), data(0)
-//{}
+Tile_Data::Tile_Data(uint8 t) 
+ : type(t), data_1(0), data_2(0)
+{}
 
-Tile_Data::Tile_Data(uint8 t, uint8 d) 
- : type(t), data(d)
+Tile_Data::Tile_Data(uint8 t, uint8 d1) 
+ : type(t), data_1(d1), data_2(0)
+{}
+
+Tile_Data::Tile_Data(uint8 t, uint8 d1, uint8 d2) 
+ : type(t), data_1(d1), data_2(d2)
 {}
 
 Tilemap::Tilemap() 
@@ -115,24 +119,24 @@ void Tilemap::Destroy() {
     init = false;
 }
 
-void Tilemap::Fill(uint8 cell_type, uint8 cell_data) {
+void Tilemap::Fill(Tile_Data cell) {
     for (int x = 0; x < map_width; x++) {
         Tile_Data* col_data = map[x];
         for (int y = 0; y < map_height; y++) {
-            col_data[y].type = cell_type;
-            col_data[y].data = cell_data;
+            col_data[y].type = cell.type;
+            col_data[y].data_1 = cell.data_1;
         }
     }
 }
 
-void Tilemap::Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_type, uint8 cell_data) {
+void Tilemap::Fill(int16 start_x, int16 start_y, int16 width, int16 height, Tile_Data cell) {
     int end_x = start_x + width;
     int end_y = start_y + height;
     for (int x = start_x; x < end_x; x++) {
         Tile_Data* col_data = map[x];
         for (int y = start_y; y < end_y; y++) {
-            col_data[y].type = cell_type;
-            col_data[y].data = cell_data;
+            col_data[y].type = cell.type;
+            col_data[y].data_1 = cell.data_1;
         }
     }
 }

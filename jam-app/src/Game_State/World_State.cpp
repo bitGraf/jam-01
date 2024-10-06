@@ -34,50 +34,56 @@ World_State::World_State(const char* filename) {
     world.cam_world_pos.x = -16;
     world.cam_world_pos.y = g_window_height - 16;
 
-    world.grid.Fill(1, 0);                          // fill whole with bedrock
-    world.grid.Fill(1, 1, 23, ground_level, 0, 1);  // empty out burrow
+    world.grid.Fill(Tile_Data(1));                          // fill whole with bedrock
+    world.grid.Fill(1, 1, 23, ground_level, Tile_Data(0,1));  // empty out burrow
     
     // fill ground with dirt, becoming tougher with depth
-    int16 max_depth = 0;
     for (int x = 1; x < 24; x++) {
         Tile_Data* col_data = world.grid[x];
         for (int y = ground_level+1; y < (world.grid.map_height - 1); y++) {
             int16 depth = y - ground_level;
             depth = (depth < 0) ? 0 : depth;
-            max_depth = depth;
 
             col_data[y].type = 2;
-            col_data[y].data = 1+(max_depth / 5);
+            col_data[y].data_1 = 1+(depth / 5);
 
             if (x == 1) {
-                log_debug("depth: %d  | strength: %d", depth, col_data[y].data);
+                log_debug("depth: %d  | strength: %d", depth, col_data[y].data_1);
             }
         }
     }
 
-    world.grid.Fill(15, ground_level-4, 8, 5, 1, 0);  // build house
-    world.grid[15][ground_level] = Tile_Data(4,0);    // depositer
-    world.grid[14][ground_level+1] = Tile_Data(5,0);  // withdrawer
+    world.grid.Fill(15, ground_level-4, 8, 5, Tile_Data(1));  // build house
+    world.grid[15][ground_level] = Tile_Data(4);    // depositer
+    world.grid[14][ground_level+1] = Tile_Data(5);  // withdrawer
 
     // build upgrade hut
-    world.grid[2][ground_level-1] = Tile_Data(6,0);
-    world.grid[3][ground_level-1] = Tile_Data(7,0);
-    world.grid[2][ground_level] = Tile_Data(14,0);
-    world.grid[3][ground_level] = Tile_Data(15,0);
+    world.grid[2][ground_level-1] = Tile_Data(6);
+    world.grid[3][ground_level-1] = Tile_Data(7);
+    world.grid[2][ground_level] = Tile_Data(14);
+    world.grid[3][ground_level] = Tile_Data(15);
 
+    // place dew drops
     int num_to_place = 20;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = Tile_Data(3,0);
+        int16 depth = y - ground_level;
+        depth = (depth < 0) ? 0 : depth;
+
+        world.grid[x][y].type = 3;
+        world.grid[x][y].data_1 = 1;
+        world.grid[x][y].data_2 = 1 + (depth / 5);
     }
+
+    // place boulders
     num_to_place = 200;
     for (int n = 0; n < num_to_place; n++) {
         int16 x = rand_int(1, 23);
         int16 y = rand_int(ground_level+5, 58);
 
-        world.grid[x][y] = Tile_Data(1,0);
+        world.grid[x][y] = Tile_Data(1);
     }
 
     // Load sprite-sheet
@@ -175,12 +181,13 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     char buffer[256];
 
     /*
+    */
     snprintf(buffer, 256, "Colony: %d", colony_size);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-    snprintf(buffer, 256, "  Hunger: %.6f", colony_hunger);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
+    //snprintf(buffer, 256, "  Hunger: %.6f", colony_hunger);
+    //Render_Text(renderer, g_small_font, color, rect, buffer);
+    //rect.y += g_font_size_small;
     snprintf(buffer, 256, "  Food: %d", colony_food);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
@@ -188,13 +195,12 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     snprintf(buffer, 256, "[You]");
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-    snprintf(buffer, 256, "  Hunger: %.6f", hunger);
-    Render_Text(renderer, g_small_font, color, rect, buffer);
-    rect.y += g_font_size_small;
+    //snprintf(buffer, 256, "  Hunger: %.6f", hunger);
+    //Render_Text(renderer, g_small_font, color, rect, buffer);
+    //rect.y += g_font_size_small;
     snprintf(buffer, 256, "  Food: %d", carrying_food);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
-    */
 
     snprintf(buffer, 256, "Dig Speed: %d", this->dig_speed);
     Render_Text(renderer, g_small_font, color, rect, buffer);
@@ -267,7 +273,7 @@ bool World_State::On_Action_Event(Action_Event action) {
                 this->player.world_y += move_y;
                 hunger += move_cost;
 
-                world.grid[player.world_x][player.world_y].data = 1; // to denote that we have visited this place before.
+                world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
             } break;
 
             case MOVE_AND_BREAK: {
@@ -275,7 +281,7 @@ bool World_State::On_Action_Event(Action_Event action) {
                 this->player.world_y += move_y;
                 hunger += break_cost;
 
-                world.grid[player.world_x][player.world_y].data = 1; // to denote that we have visited this place before.
+                world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
 
                 Break_Block(player.world_x, player.world_y);
             } break;
@@ -319,7 +325,7 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     Tile_Data& end_cell = world.grid[end_x][end_y];
 
     if (end_cell.type == 0) {
-        if (move_y < 0 && end_cell.data != 1) {
+        if (move_y < 0 && end_cell.data_1 != 1) {
             return MOVE_NOT_POSSIBLE;
         }
 
@@ -332,17 +338,23 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
     }
 
     if (end_cell.type == 2) { // dirt
-        if (dig_speed > end_cell.data) end_cell.data = 0;
-        else end_cell.data -= dig_speed;
+        if (dig_speed > end_cell.data_1) end_cell.data_1 = 0;
+        else end_cell.data_1 -= dig_speed;
 
-        if (end_cell.data == 0) 
+        if (end_cell.data_1 == 0) 
             return MOVE_AND_BREAK;
         else
             return MOVE_NOT_POSSIBLE;
     }
 
     if (end_cell.type == 3) {
-        return MOVE_AND_BREAK;
+        if (dig_speed > end_cell.data_1) end_cell.data_1 = 0;
+        else end_cell.data_1 -= dig_speed;
+
+        if (end_cell.data_1 == 0) 
+            return MOVE_AND_BREAK;
+        else
+            return MOVE_NOT_POSSIBLE;
     }
 
     if (end_cell.type == 4) {
@@ -366,7 +378,7 @@ uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
 
     if (cell.type == 3) {
         log_info("Got some goo");
-        carrying_food++;
+        carrying_food += cell.data_2;
     }
 
     world.grid[world_x][world_y].type = 0;

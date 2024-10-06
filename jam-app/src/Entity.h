@@ -5,11 +5,14 @@
 
 struct Tile_Data {
     Tile_Data();
-    //Tile_Data(uint8 t);
-    Tile_Data(uint8 t, uint8 d);
+    explicit Tile_Data(uint8 t);
+    explicit Tile_Data(uint8 t, uint8 d1);
+    explicit Tile_Data(uint8 t, uint8 d1, uint8 d2);
 
     uint8 type;
-    uint8 data;
+    uint8 data_1;
+    uint8 data_2;
+    //uint8 data_3;
 };
 
 struct Tilemap {
@@ -21,8 +24,8 @@ struct Tilemap {
     void Create(int16 map_x, int16 map_y);
     void Destroy();
 
-    void Fill(uint8 cell_type, uint8 cell_data);
-    void Fill(int16 start_x, int16 start_y, int16 width, int16 height, uint8 cell_type, uint8 cell_data);
+    void Fill(Tile_Data cell);
+    void Fill(int16 start_x, int16 start_y, int16 width, int16 height, Tile_Data cell);
     
     Tilemap();
     ~Tilemap();

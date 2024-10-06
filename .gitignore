@@ -37,3 +37,4 @@ bin/*
 export/*
 run_tree/log.txt
 run_tree/config.json
+run_tree/shop.json
