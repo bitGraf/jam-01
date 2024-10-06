@@ -18,7 +18,8 @@ enum Move_Reason {
     MOVE_POSSIBLE,
     MOVE_AND_BREAK,
     DEPOSIT_FOOD,
-    WITHDRAW_FOOD
+    WITHDRAW_FOOD,
+    ENTER_SHOP
 };
 
 World_State::World_State(const char* filename) {
@@ -33,9 +34,10 @@ World_State::World_State(const char* filename) {
     world.cam_world_pos.x = -16;
     world.cam_world_pos.y = g_window_height - 16;
 
-    world.grid.Fill(1, 0);                                                                  // fill whole with bedrock
-    world.grid.Fill(1, 1, 23, ground_level, 0, 1);                                          // empty out burrow
+    world.grid.Fill(1, 0);                          // fill whole with bedrock
+    world.grid.Fill(1, 1, 23, ground_level, 0, 1);  // empty out burrow
     
+    // fill ground with dirt, becoming tougher with depth
     int16 max_depth = 0;
     for (int x = 1; x < 24; x++) {
         Tile_Data* col_data = world.grid[x];
@@ -45,7 +47,7 @@ World_State::World_State(const char* filename) {
             max_depth = depth;
 
             col_data[y].type = 2;
-            col_data[y].data = 1+(max_depth / 8);
+            col_data[y].data = 1+(max_depth / 5);
 
             if (x == 1) {
                 log_debug("depth: %d  | strength: %d", depth, col_data[y].data);
@@ -53,9 +55,15 @@ World_State::World_State(const char* filename) {
         }
     }
 
-    world.grid.Fill(15, ground_level-4, 8, 5, 1, 0);                                        // build house
-    world.grid[15][ground_level] = Tile_Data(4,0);                                            // depositer
-    world.grid[14][ground_level+1] = Tile_Data(5,0);                                          // withdrawer
+    world.grid.Fill(15, ground_level-4, 8, 5, 1, 0);  // build house
+    world.grid[15][ground_level] = Tile_Data(4,0);    // depositer
+    world.grid[14][ground_level+1] = Tile_Data(5,0);  // withdrawer
+
+    // build upgrade hut
+    world.grid[2][ground_level-1] = Tile_Data(6,0);
+    world.grid[3][ground_level-1] = Tile_Data(7,0);
+    world.grid[2][ground_level] = Tile_Data(14,0);
+    world.grid[3][ground_level] = Tile_Data(15,0);
 
     int num_to_place = 20;
     for (int n = 0; n < num_to_place; n++) {
@@ -90,6 +98,8 @@ World_State::World_State(const char* filename) {
     colony_size = 100;
     field_eat_ratio = 0.25;
     colony_eat_ratio = 1.0;
+
+    show_debug = false;
 }
 
 World_State::~World_State() {
@@ -145,7 +155,8 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     //////////// Render
     // tilemap
     Draw_Tilemap(renderer, &world.grid, &world.tilesheet, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y, ground_level);
-    //Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y);
+    if (show_debug)
+        Draw_Tilemap_Debug(renderer, &world.grid, world.Get_Origin_Screen_Pos(), world.grid_size_x, world.grid_size_y);
 
     // origin
     Draw_Sprite(renderer, world.sprite_origin, world.Get_Origin_Screen_Pos(), 0.0);
@@ -163,6 +174,7 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     SDL_Color back_color = { 0, 0, 0, 255 };
     char buffer[256];
 
+    /*
     snprintf(buffer, 256, "Colony: %d", colony_size);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
@@ -180,6 +192,14 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
     snprintf(buffer, 256, "  Food: %d", carrying_food);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    */
+
+    snprintf(buffer, 256, "Dig Speed: %d", this->dig_speed);
+    Render_Text(renderer, g_small_font, color, rect, buffer);
+    rect.y += g_font_size_small;
+    snprintf(buffer, 256, "Dig Strength: %d", this->dig_strength);
     Render_Text(renderer, g_small_font, color, rect, buffer);
     rect.y += g_font_size_small;
 
@@ -221,6 +241,9 @@ bool World_State::On_Action_Event(Action_Event action) {
         return true;
     } else if (action.action == Action_B && action.pressed) {
         this->player.sprite.Set_Sequence(2, 0);
+        return true;
+    } else if (action.action == Action_Back && action.pressed) {
+        show_debug = !show_debug;
         return true;
     }
     
@@ -270,6 +293,11 @@ bool World_State::On_Action_Event(Action_Event action) {
                     this->carrying_food++;
                 }
             } break;
+
+            case ENTER_SHOP: {
+                Game_State* new_state = new Shop_State(colony_food, dig_speed, dig_strength);
+                g_game.Push_New_State(new_state);
+            }
         }
 
         return true;
@@ -325,12 +353,16 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
         return WITHDRAW_FOOD;
     }
 
+    if (end_cell.type == 15) {
+        return ENTER_SHOP;
+    }
+
     return MOVE_NOT_POSSIBLE;
 }
 
 uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
     Tile_Data cell = world.grid[world_x][world_y];
-    log_debug("destroy cell: %d", cell);
+    log_debug("destroy cell: %d", cell.type);
 
     if (cell.type == 3) {
         log_info("Got some goo");

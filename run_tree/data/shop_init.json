@@ -1,0 +1,53 @@
+{
+    "Title": "Bug Shop",
+    "Upgrades": [
+        {
+            "Name": "upgrade #1",
+            "Cost": 1,
+            "Speed": 1,
+            "Strength": 0
+        },
+        {
+            "Name": "upgrade #2",
+            "Cost": 1,
+            "Speed": 1,
+            "Strength": 0
+        },
+        {
+            "Name": "upgrade #3",
+            "Cost": 5,
+            "Speed": 2,
+            "Strength": 0
+        },
+        {
+            "Name": "upgrade #4",
+            "Cost": 10,
+            "Speed": 2,
+            "Strength": 1
+        },
+        {
+            "Name": "upgrade #5",
+            "Cost": 50,
+            "Speed": 3,
+            "Strength": 0
+        },
+        {
+            "Name": "upgrade #6",
+            "Cost": 100,
+            "Speed": 5,
+            "Strength": 1
+        },
+        {
+            "Name": "upgrade #7",
+            "Cost": 500,
+            "Speed": 5,
+            "Strength": 1
+        },
+        {
+            "Name": "upgrade #8",
+            "Cost": 1000,
+            "Speed": 10,
+            "Strength": 3
+        }
+    ]
+}

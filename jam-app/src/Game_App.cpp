@@ -501,7 +501,6 @@ void Game_App::On_Key_Event(int32 key_code, bool pressed) {
 
 void Game_App::Update_Volume(uint8 new_master_volume, uint8 new_music_volume) {
     int master_vol = (((real32)new_master_volume) * MIX_MAX_VOLUME / 100.0f);
-    //int music_vol = (((real32)new_music_volume) * MIX_MAX_VOLUME / 100.0f);
     int music_vol = (real32)(new_music_volume*new_master_volume * MIX_MAX_VOLUME) / (10000.0f);
 
     Mix_MasterVolume(master_vol);

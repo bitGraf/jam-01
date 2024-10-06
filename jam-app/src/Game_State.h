@@ -69,6 +69,7 @@ private:
     // World
     World world;
     int16 ground_level;
+    bool show_debug;
 
     // Player
     Entity player;
@@ -89,4 +90,39 @@ private:
 
     // debug
     std::string level_name;
+};
+
+struct Upgrade {
+    Upgrade();
+    
+    std::string name;
+    int16 cost;
+    uint8 speed;
+    uint8 strength;
+
+    bool bought;
+};
+
+struct Shop_State : public Game_State {
+    Shop_State(int16& food, uint8& dig_speed, uint8& dig_strength);
+    virtual ~Shop_State() override;
+
+    virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
+    virtual bool On_Action_Event(Action_Event action) override;
+
+private:
+    bool Read_Config();
+    bool Write_Config();
+    void Leave_Shop();
+
+private:
+    std::string shop_title;
+    std::vector<Upgrade> upgrades;
+    uint8 num_options;
+    uint8 current_menu_item;
+
+    // handles to the game state
+    int16& food;
+    uint8& dig_speed;
+    uint8& dig_strength;
 };

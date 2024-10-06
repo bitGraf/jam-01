@@ -141,13 +141,15 @@ void Draw_Tilemap_Debug(SDL_Renderer* renderer, const Tilemap* map, laml::Vec2 s
             const Tile_Data cell = col_data[y];
             rect.y = (screen_pos.y + tile_height*y) - tile_height/2;
 
-            snprintf(buffer, 16, "%d", cell.type);
-            Render_Text(renderer, g_tiny_font, color, rect, buffer);
+            if (cell.type) {
+                snprintf(buffer, 16, "%d", cell.type);
+                Render_Text(renderer, g_tiny_font, color, rect, buffer);
 
-            rect.x += tile_width/2;
-            snprintf(buffer, 16, "%d", cell.data);
-            Render_Text(renderer, g_tiny_font, color, rect, buffer);
-            rect.x -= tile_width/2;
+                rect.x += tile_width/2;
+                snprintf(buffer, 16, "%d", cell.data);
+                Render_Text(renderer, g_tiny_font, color, rect, buffer);
+                rect.x -= tile_width/2;
+            }
         }
     }
 }
