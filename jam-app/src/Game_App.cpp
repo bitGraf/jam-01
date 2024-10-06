@@ -294,7 +294,8 @@ bool Game_App::Run() {
         //log_info("[%6d %6d] [%6d %6d] [%6d %6d]", left_stick_x, left_stick_y, right_stick_x, right_stick_y, left_trigger, right_trigger);
 
         ///////////////////////////////////////////////////////////////////////////////////////////
-        Fixed_Update_And_Render(last_frame_time);
+        double dt = (last_frame_time > 0.1) ? 0.1 : last_frame_time;
+        Fixed_Update_And_Render(dt);
         
         // Draw version number
         Render_Text(renderer, g_small_font, font_color, {0,0,0,0}, "Version: %d", version_number);

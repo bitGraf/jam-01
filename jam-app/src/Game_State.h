@@ -7,6 +7,7 @@
 #include "Sprite.h"
 #include "Entity.h"
 #include "Input_Mapping.h"
+#include "Gradient.h"
 
 struct SDL_Renderer;
 
@@ -64,16 +65,21 @@ struct World_State : public Game_State {
 private:
     uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
     uint8 Break_Block(int16 world_x, int16 world_y);
+
     void Next_Day();
+    void Death();
 
 private:
     // World
     World world;
-    int16 ground_level;
-    bool show_debug;
+    Gradient time_gradient;
     real32 time_rate;
     real32 time_of_day;
     uint8 day_number;
+    uint8 fast_forward_day;
+
+    bool pan_to_colony;
+    bool fast_forward;
 
     // Player
     Entity player;
@@ -93,6 +99,7 @@ private:
     real32 colony_eat_ratio;
 
     // debug
+    bool show_debug;
     std::string level_name;
 };
 

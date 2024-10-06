@@ -13,8 +13,15 @@ extern Game_App g_game;
 extern int32 g_window_width;
 extern int32 g_window_height;
 
-const real32 day_start = 6;
-const real32 day_end = 10.0;
+const real32 day_start = 6;  //  6:00 am
+const real32 day_end = 22.0; // 10:00 pm
+
+int16 ground_level;
+int16 spawn_x;
+int16 spawn_y;
+
+real32 cam_min_y;
+real32 cam_max_y;
 
 enum Move_Reason {
     MOVE_NOT_POSSIBLE = 0,
@@ -31,12 +38,17 @@ World_State::World_State(const char* filename) {
     level_name = filename;
 
     ground_level = 8;
+    spawn_x = 6;
+    spawn_y = ground_level;
 
     // Initialize world origin
     world.origin = laml::Vec2(0.0, g_window_height);
     world.Init_Grid(25, 60, 32, 32);
-    world.cam_world_pos.x = -16;
-    world.cam_world_pos.y = g_window_height - 16;
+    world.cam_world_pos.x = -world.grid_size_x/2;
+    world.cam_world_pos.y = g_window_height - world.grid_size_y/2;
+
+    cam_min_y = (g_window_height - world.grid_size_y/2);
+    cam_max_y = (60*32 - world.grid_size_y/2);
 
     world.grid.Fill(Tile_Data(1));                          // fill whole with bedrock
     world.grid.Fill(1, 1, 23, ground_level, Tile_Data(0,1));  // empty out burrow
@@ -100,9 +112,13 @@ World_State::World_State(const char* filename) {
     dig_speed = 1;
 
     // day-night cycles
+    time_gradient.Load_From_Image("data/sky_gradient.png");
+    time_gradient.Set_Mapping_Range(0.0, 24.0);
     time_rate = 0.5; // 30 mins every second?
     time_of_day = day_start;
     day_number = 1;
+    fast_forward = false;
+    pan_to_colony = false;
 
     // Hunger
     hunger = 0.0;
@@ -124,19 +140,53 @@ World_State::~World_State() {
 }
 
 void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
-    SDL_SetRenderDrawColor(renderer, 120, 90, 255, 255);
-    SDL_RenderClear(renderer);
-
-    // Update Time
-    time_of_day += time_rate * dt;
-    if (time_of_day > 24.0f) {
-        time_of_day -= 24.0f;
-    }
-
-    // Draw sprite
     int32 depth = player.world_y - ground_level;
     bool in_colony = (depth <= 0);
+
+    // Read inputs
+    real32 l_stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
+    real32 l_stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
+
+    real32 r_stick_x = g_game.GetAxes()->axes[Axis_Right_Horiz];
+    real32 r_stick_y = g_game.GetAxes()->axes[Axis_Right_Vert];
+
+    real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
+    real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
+
+    // Update Time
+    real32 time_advance_rate = fast_forward ? (time_rate*10.0f) : time_rate;
+    if (!fast_forward) time_advance_rate *= 1.0f + (r_trigger*9.0); // not pressed->1.0, max press->10.0
+    time_of_day += time_advance_rate * dt;
+    if (time_of_day > 24.0f) {
+        day_number++;
+        time_of_day -= 24.0f;
+    }
+    SDL_Color bg = time_gradient.Sample(time_of_day);
+
+    if ((time_of_day > day_end) && !fast_forward) {
+        if (in_colony) {
+            log_info("End of day! go to sleep.");
+            Next_Day();
+        } else {
+            log_info("End of day! death.");
+            Death();
+        }
+    }
+
+    if (fast_forward && (fast_forward_day==day_number) && (time_of_day > day_start)) {
+        fast_forward = false;
+        pan_to_colony = false;
+    }
+
+    // clear background
+    //SDL_SetRenderDrawColor(renderer, 120, 90, 255, 255);
+    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    SDL_RenderClear(renderer);
+
+    // Update sprite
     player.sprite.Update(dt);
+
+    // Update hunger stats    
     hunger += (hunger_rate * dt);
     if (hunger > 1.0) {
         if (in_colony) {
@@ -147,31 +197,38 @@ void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
             hunger -= field_eat_ratio;
         }
     }
-    colony_hunger += (hunger_rate * colony_size * dt);
+    colony_hunger += (hunger_rate * (colony_size-1) * dt);  // -1 because your hunger is tracked separatly
     if (colony_hunger > 1.0) {
         colony_food--;
         colony_hunger-=1.0;
     }
-    real32 stick_x = 0.0, stick_y = 0.0;
     
-    //stick_x = g_game.GetAxes()->axes[Axis_Left_Horiz];
-    //stick_y = g_game.GetAxes()->axes[Axis_Left_Vert];
-    //player.world_x += stick_x * (1.0 * dt);
-    //player.world_y += stick_y * (1.0 * dt);
+    // Respond to inputs
+    //player.world_x += l_stick_x * (1.0 * dt);
+    //player.world_y += l_stick_y * (1.0 * dt);
 
-    real32 l_trigger = g_game.GetAxes()->axes[Axis_Left_Trigger];
-    real32 r_trigger = g_game.GetAxes()->axes[Axis_Right_Trigger];
     player.angle += (r_trigger - l_trigger) * 360.0*dt;
     player.angle = laml::map(player.angle, 0.0, 360.0);
 
-    stick_x =  0.0 * g_game.GetAxes()->axes[Axis_Right_Horiz];
-    stick_y = -1.0 * g_game.GetAxes()->axes[Axis_Right_Vert];
-    world.cam_world_pos = world.cam_world_pos + laml::Vec2(stick_x, stick_y) * (1500.0 * dt);
-    if (world.cam_world_pos.y < (g_window_height - 16)) {
-        world.cam_world_pos.y = g_window_height - 16;
-    }
-    if (world.cam_world_pos.y > (60*32 - 16)) {
-        world.cam_world_pos.y = (60*32 - 16);
+    if (pan_to_colony) {
+        real32 start_time = time_of_day;
+        real32 end_time = day_start;
+        real32 ttg = (start_time > day_end) ? (24.0 - start_time + end_time) : (end_time - start_time);
+        real32 ttg_s = ttg / (10.0f*time_rate);
+        real32 ey = (world.cam_world_pos.y - cam_min_y);
+        real32 rate = (ey / ttg_s);
+
+        //log_trace("%.3f -> %.3f  |  ttg%.3f  |  e%.3f  | r%.3f", world.cam_world_pos.y, cam_min_y, ttg_s, ey, rate);
+
+        world.cam_world_pos.y -= rate * dt;
+    } else {
+        world.cam_world_pos = world.cam_world_pos + laml::Vec2(0.0, -r_stick_y) * (1500.0 * dt);
+        if (world.cam_world_pos.y < cam_min_y) {
+            world.cam_world_pos.y = cam_min_y;
+        }
+        if (world.cam_world_pos.y > cam_max_y) {
+            world.cam_world_pos.y = cam_max_y;
+        }
     }
 
 
@@ -277,82 +334,86 @@ bool World_State::On_Action_Event(Action_Event action) {
         Game_State* pause = new Pause_State();
         g_game.Push_New_State(pause);
         return true;
-    } else if (action.action == Action_X && action.pressed) {
-        this->player.sprite.Set_Sequence(0, 0);
-        return true;
-    } else if (action.action == Action_Y && action.pressed) {
-        this->player.sprite.Set_Sequence(1, 0);
-        return true;
-    } else if (action.action == Action_B && action.pressed) {
-        this->player.sprite.Set_Sequence(2, 0);
-        return true;
     } else if (action.action == Action_Back && action.pressed) {
         show_debug = !show_debug;
         return true;
     }
     
-    int16 move_x = 0, move_y = 0;
-    if (action.action == Action_Right && action.pressed) {
-        move_x = 1;
-    } else if (action.action == Action_Left && action.pressed) {
-        move_x = -1;
-    } else if (action.action == Action_Up && action.pressed) {
-        if (player.world_y > ground_level)
-            move_y = -1;
-    } else if (action.action == Action_Down && action.pressed) {
-        move_y = 1;
-    }
-
-    if (move_x || move_y) {
-        uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y);
-        switch (reason) {
-            case MOVE_POSSIBLE: {
-                this->player.world_x += move_x;
-                this->player.world_y += move_y;
-                hunger += move_cost;
-
-                world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
-            } break;
-
-            case MOVE_AND_BREAK: {
-                this->player.world_x += move_x;
-                this->player.world_y += move_y;
-                hunger += break_cost;
-
-                world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
-
-                Break_Block(player.world_x, player.world_y);
-            } break;
-
-            case DEPOSIT_FOOD: {
-                if (this->carrying_food > 0) {
-                    this->carrying_food--;
-                    this->colony_food++;
-                }
-            } break;
-
-            case WITHDRAW_FOOD: {
-                if (this->colony_food > 0) {
-                    this->colony_food--;
-                    this->carrying_food++;
-                }
-            } break;
-
-            case SLEEP: {
-                log_info("Going to sleep!");
-                bool allowed_to_sleep = true;
-                if (allowed_to_sleep) {
-                    Next_Day();
-                }
-            } break;
-
-            case ENTER_SHOP: {
-                Game_State* new_state = new Shop_State(colony_food, dig_speed, dig_strength);
-                g_game.Push_New_State(new_state);
-            }
+    if (action.pressed && !fast_forward) {
+        if (action.action == Action_X) {
+            this->player.sprite.Set_Sequence(0, 0);
+            return true;
+        } else if (action.action == Action_Y) {
+            this->player.sprite.Set_Sequence(1, 0);
+            return true;
+        } else if (action.action == Action_B) {
+            this->player.sprite.Set_Sequence(2, 0);
+            return true;
+        }
+    
+        int16 move_x = 0, move_y = 0;
+        if (action.action == Action_Right) {
+            move_x = 1;
+        } else if (action.action == Action_Left) {
+            move_x = -1;
+        } else if (action.action == Action_Up) {
+            if (player.world_y > ground_level)
+                move_y = -1;
+        } else if (action.action == Action_Down) {
+            move_y = 1;
         }
 
-        return true;
+        if (move_x || move_y) {
+            uint8 reason = Move_Entity(player.world_x, player.world_y, move_x, move_y);
+            switch (reason) {
+                case MOVE_POSSIBLE: {
+                    this->player.world_x += move_x;
+                    this->player.world_y += move_y;
+                    hunger += move_cost;
+
+                    world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
+                } break;
+
+                case MOVE_AND_BREAK: {
+                    this->player.world_x += move_x;
+                    this->player.world_y += move_y;
+                    hunger += break_cost;
+
+                    world.grid[player.world_x][player.world_y].data_1 = 1; // to denote that we have visited this place before.
+
+                    Break_Block(player.world_x, player.world_y);
+                } break;
+
+                case DEPOSIT_FOOD: {
+                    if (this->carrying_food > 0) {
+                        this->carrying_food--;
+                        this->colony_food++;
+                    }
+                } break;
+
+                case WITHDRAW_FOOD: {
+                    if (this->colony_food > 0) {
+                        this->colony_food--;
+                        this->carrying_food++;
+                    }
+                } break;
+
+                case SLEEP: {
+                    log_info("Going to sleep!");
+                    bool allowed_to_sleep = true;
+                    if (allowed_to_sleep) {
+                        Next_Day();
+                    }
+                } break;
+
+                case ENTER_SHOP: {
+                    Game_State* new_state = new Shop_State(colony_food, dig_speed, dig_strength);
+                    g_game.Push_New_State(new_state);
+                }
+            }
+
+            return true;
+        }
     }
 
     return false;
@@ -424,7 +485,7 @@ uint8 World_State::Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16
 
 uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
     Tile_Data cell = world.grid[world_x][world_y];
-    log_debug("destroy cell: %d", cell.type);
+    log_trace("destroy cell: %d", cell.type);
 
     if (cell.type == 3) {
         log_info("Got some goo");
@@ -437,6 +498,21 @@ uint8 World_State::Break_Block(int16 world_x, int16 world_y) {
 }
 
 void World_State::Next_Day() {
-    time_of_day = day_start;
-    day_number++;
+    fast_forward = true;
+    fast_forward_day = day_number + 1;
+}
+
+void World_State::Death() {
+    colony_size--;
+    carrying_food = 0;
+    hunger = 0;
+    
+    player.world_x = spawn_x;
+    player.world_y = spawn_y;
+
+    log_info("Spawning as new bug");
+
+    pan_to_colony = true;
+
+    Next_Day();
 }
