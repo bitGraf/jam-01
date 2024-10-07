@@ -136,7 +136,7 @@ World_State::World_State(const char* filename)
     break_cost = 0.01;
     colony_hunger = 0.0;
     carrying_food = 0;
-    colony_food = 5000;
+    colony_food = 10;
     colony_size = 5;
     field_eat_ratio = 0.25;
     colony_eat_ratio = 1.0;
