@@ -1,5 +1,5 @@
 {
-    "Sprite_Sheet": "data/bug-sheet.png",
+    "Sprite_Sheet": "data/sprites/bug-sheet.png",
     "Sprite_Width": 32,
     "Sprite_Height": 32,
     "Anchor_X": 16,

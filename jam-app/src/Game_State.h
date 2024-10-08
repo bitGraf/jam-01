@@ -11,7 +11,12 @@
 
 struct SDL_Renderer;
 
+///////////////////////////////////////////////////////////////////////////////
+// Base Game State
+///////////////////////////////////////////////////////////////////////////////
+
 struct Game_State {
+public:
     Game_State() = default;
     virtual ~Game_State() = default;
 
@@ -19,8 +24,21 @@ struct Game_State {
     virtual bool On_Action_Event(Action_Event action) = 0;
 };
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Main Menu State
+///////////////////////////////////////////////////////////////////////////////
+
+struct Menu_Item {
+    //Menu_Item(const std::string& text_);
+    Menu_Item(const std::string& text_, uint32 action_);
+
+    std::string text;
+    uint32 action;
+};
+
 struct Menu_State : public Game_State {
-    Menu_State();
+    Menu_State(bool has_save);
     virtual ~Menu_State() override;
 
     virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
@@ -28,8 +46,12 @@ struct Menu_State : public Game_State {
 
 private:
     uint8 current_menu_item;
-    std::vector<std::string> menu_options;
+    std::vector<Menu_Item> menu_options;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Options Menu State
+///////////////////////////////////////////////////////////////////////////////
 
 struct Option_State : public Game_State {
     Option_State();
@@ -40,8 +62,12 @@ struct Option_State : public Game_State {
 
 private:
     uint8 current_menu_item;
-    std::vector<std::string> menu_options;
+    std::vector<Menu_Item> menu_options;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Pause Menu State
+///////////////////////////////////////////////////////////////////////////////
 
 struct Pause_State : public Game_State {
     Pause_State();
@@ -52,8 +78,12 @@ struct Pause_State : public Game_State {
 
 private:
     uint8 current_menu_item;
-    std::vector<std::string> menu_options;
+    std::vector<Menu_Item> menu_options;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// World/Shop Handover data
+///////////////////////////////////////////////////////////////////////////////
 
 struct Shop_Handover {
     Shop_Handover(int16& food,uint8& dig_speed,uint8& dig_strength,uint8& extraction,uint8& abilities);
@@ -65,6 +95,10 @@ struct Shop_Handover {
     uint8& abilities;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// World State
+///////////////////////////////////////////////////////////////////////////////
+
 struct World_State : public Game_State {
     World_State(const char* filename);
     virtual ~World_State() override;
@@ -73,6 +107,8 @@ struct World_State : public Game_State {
     virtual bool On_Action_Event(Action_Event action) override;
 
 private:
+    bool Read_Config(const char* init_filename, const char* filename);
+    bool Write_Config(const char* filename);
     uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
     uint8 Break_Block(int16 world_x, int16 world_y);
 
@@ -120,8 +156,12 @@ private:
     std::string level_name;
 };
 
-struct Upgrade {
-    Upgrade();
+///////////////////////////////////////////////////////////////////////////////
+// Shop State
+///////////////////////////////////////////////////////////////////////////////
+
+struct Shop_Upgrade {
+    Shop_Upgrade();
 
     std::string name;
     std::string description;
@@ -134,28 +174,6 @@ struct Upgrade {
     bool bought;
 };
 
-struct Shop_State : public Game_State {
-    Shop_State(Shop_Handover& handover);
-    virtual ~Shop_State() override;
-
-    virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
-    virtual bool On_Action_Event(Action_Event action) override;
-
-private:
-    bool Read_Config();
-    bool Write_Config();
-    void Leave_Shop();
-
-private:
-    std::string shop_title;
-    std::vector<Upgrade> upgrades;
-    uint8 num_options;
-    uint8 current_menu_item;
-
-    // handles to the game state
-    Shop_Handover& handover;
-};
-
 enum Ability_Enum {
     Ability_None = 0,
     Ability_Hibernate = 1,
@@ -164,3 +182,25 @@ enum Ability_Enum {
 
 #define ABILITY_HIBERNATE 0x01
 #define ABILITY_DASH 0x02
+
+struct Shop_State : public Game_State {
+    Shop_State(Shop_Handover& handover);
+    virtual ~Shop_State() override;
+
+    virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
+    virtual bool On_Action_Event(Action_Event action) override;
+
+private:
+    bool Read_Config(const char* init_filename, const char* filename);
+    bool Write_Config(const char* filename);
+    void Leave_Shop();
+
+private:
+    std::string shop_title;
+    std::vector<Shop_Upgrade> upgrades;
+    uint8 num_options;
+    uint8 current_menu_item;
+
+    // handles to the game state
+    Shop_Handover& handover;
+};

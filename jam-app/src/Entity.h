@@ -43,7 +43,9 @@ struct World {
 
     Indexed_Tilesheet tilesheet;
 
-    void Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y);
+    void Init_Grid(const char* tilesheet_filename,
+                   int16 num_cells_x, int16 num_cells_y, 
+                   int16 cell_x, int16 cell_y);
 
     int16 grid_size_x, grid_size_y;
     Tilemap grid;

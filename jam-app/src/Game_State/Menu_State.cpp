@@ -13,12 +13,40 @@ extern int32 g_font_size_huge;
 #include "Game_App.h"
 extern Game_App g_game;
 
-Menu_State::Menu_State() {
+
+///////////////////////////////////////////////////////////////////////////////
+// Menu Item
+///////////////////////////////////////////////////////////////////////////////
+
+Menu_Item::Menu_Item(const std::string& text_, uint32 action_)
+ : text(text_), action(action_)
+{}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Menu State
+///////////////////////////////////////////////////////////////////////////////
+
+enum Menu_Actions {
+    MenuAction_None = 0,
+    MenuAction_Play,
+    MenuAction_Continue,
+    MenuAction_NewGame,
+    MenuAction_Options,
+    MenuAction_Quit,
+};
+
+Menu_State::Menu_State(bool has_save) {
     log_trace("Menu_State::Menu_State()");
 
-    this->menu_options.push_back("Play");
-    this->menu_options.push_back("Options");
-    this->menu_options.push_back("Quit");
+    if (has_save) {
+        this->menu_options.push_back(Menu_Item("Continue", MenuAction_Continue));
+        this->menu_options.push_back(Menu_Item("New Game", MenuAction_NewGame));
+    } else {
+        this->menu_options.push_back(Menu_Item("Play", MenuAction_Play));
+    }
+    this->menu_options.push_back(Menu_Item("Options", MenuAction_Options));
+    this->menu_options.push_back(Menu_Item("Quit", MenuAction_Quit));
 
     this->current_menu_item = 0;
 }
@@ -38,18 +66,19 @@ void Menu_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     int num_options = menu_options.size();
     current_menu_item = (current_menu_item >= num_options) ? num_options : current_menu_item;
     for (int n = 0; n < num_options; n++) {
-        const std::string& item = this->menu_options[n];
+        const Menu_Item& item = this->menu_options[n];
+        const std::string& text = item.text;
 
-        Render_Text(renderer, g_medium_font, back_color, pos, item.c_str());
+        Render_Text(renderer, g_medium_font, back_color, pos, text.c_str());
 
         pos.x -= offset;
         pos.y -= offset;
 
         //render selected text differently
         if (n == current_menu_item) {
-            Render_Text(renderer, g_medium_font, select_color, pos, item.c_str());
+            Render_Text(renderer, g_medium_font, select_color, pos, text.c_str());
         } else {
-            Render_Text(renderer, g_medium_font, color, pos, item.c_str());
+            Render_Text(renderer, g_medium_font, color, pos, text.c_str());
         }
 
         pos.y += g_font_size_medium;
@@ -98,22 +127,36 @@ bool Menu_State::On_Action_Event(Action_Event action) {
         }
         return true;
     } else if (action.action == Action_A && action.pressed) {
-        log_info("Enter pressed [%s]", this->menu_options[current_menu_item].c_str());
+        const Menu_Item& curr = this->menu_options[current_menu_item];
+        log_info("Enter pressed [%s]", curr.text.c_str());
 
-        switch (current_menu_item) {
-            case 0: { // Play
+
+        switch (curr.action) {
+            case MenuAction_Play: { // Play
                 Game_State* play = new World_State("data/levels/level_1.json");
                 g_game.Push_New_State(play);
                 break;
             };
 
-            case 1: { // Options
+            case MenuAction_Continue: { // Continue
+                Game_State* play = new World_State("data/levels/level_1.json");
+                g_game.Push_New_State(play);
+                break;
+            };
+
+            case MenuAction_NewGame: { // New Game
+                Game_State* play = new World_State("data/levels/level_1.json");
+                g_game.Push_New_State(play);
+                break;
+            };
+
+            case MenuAction_Options: { // Options
                 Game_State* opt = new Option_State();
                 g_game.Push_New_State(opt);
                 break;
             };
 
-            case 2: { // Quit
+            case MenuAction_Quit: { // Quit
                 SDL_Event quit_event;
                 quit_event.type = SDL_QUIT;
                 SDL_PushEvent(&quit_event);
@@ -125,3 +168,5 @@ bool Menu_State::On_Action_Event(Action_Event action) {
     }
     return false;
 }
+
+///////////////////////////////////////////////////////////////////////////////

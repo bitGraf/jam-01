@@ -26,7 +26,9 @@ laml::Vec2 World::Get_Screen_Pos(int16 world_x, int16 world_y) {
     return Get_Screen_Pos(world_pos);
 }
 
-void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 cell_y) {
+void World::Init_Grid(const char* tilesheet_filename,
+                      int16 num_cells_x, int16 num_cells_y, 
+                      int16 cell_x, int16 cell_y) {
     cam_world_pos = laml::Vec2(0.0, 0.0);
     sprite_origin.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus.png", 32, 32, 16, 16);
     sprite_cam.Load_Sprite_Sheet(g_game.GetRenderer(), "data/plus2.png", 32, 32, 16, 16);
@@ -35,7 +37,7 @@ void World::Init_Grid(int16 num_cells_x, int16 num_cells_y, int16 cell_x, int16 
     grid_size_x = cell_x;
     grid_size_y = cell_y;
 
-    tilesheet.Load_Tilesheet(g_game.GetRenderer(), "data/tilesheet.png", 32, 32);
+    tilesheet.Load_Tilesheet(g_game.GetRenderer(), tilesheet_filename, 32, 32);
 }
 
 

@@ -12,12 +12,23 @@ const int32 offset = 2;
 #include "Game_App.h"
 extern Game_App g_game;
 
+///////////////////////////////////////////////////////////////////////////////
+// Option State
+///////////////////////////////////////////////////////////////////////////////
+
+enum Option_Actions {
+    OptionAction_None = 0,
+    OptionAction_MasterVolume,
+    OptionAction_MusicVolume,
+    OptionAction_Back
+};
+
 Option_State::Option_State() {
     log_trace("Option_State::Option_State()");
 
-    this->menu_options.push_back("Master Volume: ");
-    this->menu_options.push_back("Music Volume: ");
-    this->menu_options.push_back("Back");
+    this->menu_options.push_back(Menu_Item("Master Volume: ", OptionAction_MasterVolume));
+    this->menu_options.push_back(Menu_Item("Music Volume: ", OptionAction_MusicVolume));
+    this->menu_options.push_back(Menu_Item("Back", OptionAction_Back));
 
     this->current_menu_item = 0;
 }
@@ -36,10 +47,11 @@ void Option_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
     int num_options = menu_options.size();
     current_menu_item = (current_menu_item >= num_options) ? num_options : current_menu_item;
     for (int n = 0; n < num_options; n++) {
-        const std::string& item = this->menu_options[n];
+        const Menu_Item& item = this->menu_options[n];
+        const std::string& opt_text = item.text;
 
         // volume
-        const char* text = item.c_str();
+        const char* text = opt_text.c_str();
         char buffer[1024];
         if (n == 0) {
             text = buffer;
@@ -79,18 +91,11 @@ bool Option_State::On_Action_Event(Action_Event action) {
         }
         return true;
     } else if (action.action == Action_A && action.pressed) {
-        log_info("Enter pressed [%s]", this->menu_options[current_menu_item].c_str());
+        const Menu_Item& item = this->menu_options[current_menu_item];
+        log_info("Enter pressed [%s]", item.text.c_str());
 
-        switch (current_menu_item) {
-            case 0: { // Master Volume
-                break;
-            };
-
-            case 1: { // Music Volume
-                break;
-            };
-
-            case 2: { // Back
+        switch (item.action) {
+            case OptionAction_Back: { // Back
                 g_game.Pop_State();
                 break;
             };
@@ -98,9 +103,10 @@ bool Option_State::On_Action_Event(Action_Event action) {
 
         return true;
     } else if (action.action == Action_Left && action.pressed) {
+        const Menu_Item& item = this->menu_options[current_menu_item];
 
-        switch (current_menu_item) {
-            case 0: { // Master Volume
+        switch (item.action) {
+            case OptionAction_MasterVolume: { // Master Volume
                 g_game.Get_Options().master_volume -= 5;
                 if (g_game.Get_Options().master_volume <= 0) {
                     g_game.Get_Options().master_volume = 0;
@@ -110,7 +116,7 @@ bool Option_State::On_Action_Event(Action_Event action) {
                 break;
             };
 
-            case 1: { // Music Volume
+            case OptionAction_MusicVolume: { // Music Volume
                 g_game.Get_Options().music_volume -= 5;
                 if (g_game.Get_Options().music_volume <= 0) {
                     g_game.Get_Options().music_volume = 0;
@@ -123,9 +129,10 @@ bool Option_State::On_Action_Event(Action_Event action) {
 
         return true;
     } else if (action.action == Action_Right && action.pressed) {
+        const Menu_Item& item = this->menu_options[current_menu_item];
 
-        switch (current_menu_item) {
-            case 0: { // Master Volume
+        switch (item.action) {
+            case OptionAction_MasterVolume: { // Master Volume
                 g_game.Get_Options().master_volume += 5;
                 if (g_game.Get_Options().master_volume >= 100) {
                     g_game.Get_Options().master_volume = 100;
@@ -135,7 +142,7 @@ bool Option_State::On_Action_Event(Action_Event action) {
                 break;
             };
 
-            case 1: { // Music Volume
+            case OptionAction_MusicVolume: { // Music Volume
                 g_game.Get_Options().music_volume += 5;
                 if (g_game.Get_Options().music_volume >= 100) {
                     g_game.Get_Options().music_volume = 100;
@@ -150,3 +157,5 @@ bool Option_State::On_Action_Event(Action_Event action) {
     }
     return false;
 }
+
+///////////////////////////////////////////////////////////////////////////////

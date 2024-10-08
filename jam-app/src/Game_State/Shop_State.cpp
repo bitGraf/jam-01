@@ -23,13 +23,16 @@ extern Game_App g_game;
 #include <json.hpp>
 using json = nlohmann::json;
 
+static const char* shop_init_filename = "data/init/shop_init.json";
+static const char* shop_filename = "save/shop.json";
+
 const char* Ability_Names[] = {
     "<none>",
     "Hibernate",
     "Dash"
 };
 
-Upgrade::Upgrade() {
+Shop_Upgrade::Shop_Upgrade() {
     name = "<upgrade>";
     description = "<description>";
     cost = 0;
@@ -51,7 +54,7 @@ Shop_State::Shop_State(Shop_Handover& handover)
 
     current_menu_item = 0;
 
-    if (!Read_Config()) {
+    if (!Read_Config(shop_init_filename, shop_filename)) {
         log_error("Failed to load shop config!");
     }
 
@@ -124,7 +127,7 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
     // List upgrades as additional options
     for (int n = 0; n < upgrades.size(); n++) {
-        const Upgrade& upgrade = upgrades[n];
+        const Shop_Upgrade& upgrade = upgrades[n];
         rect.x = 10;
 
         std::string up_name = upgrade.name;
@@ -144,7 +147,7 @@ void Shop_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
 
     // show upgrade stats if a upgrade is hovered
     if (current_menu_item != 0) {
-        const Upgrade& upgrade = upgrades[current_menu_item - 1];
+        const Shop_Upgrade& upgrade = upgrades[current_menu_item - 1];
 
         rect.y = 300;
         rect.x = 450;
@@ -256,7 +259,7 @@ bool Shop_State::On_Action_Event(Action_Event action) {
             }
 
             uint8 upgrade_num = current_menu_item - 1;
-            Upgrade& upgrade = upgrades[upgrade_num];
+            Shop_Upgrade& upgrade = upgrades[upgrade_num];
             log_info("Enter pressed [%s]", upgrade.name.c_str());
 
             if (!upgrade.bought && handover.food >= upgrade.cost) {
@@ -280,20 +283,20 @@ bool Shop_State::On_Action_Event(Action_Event action) {
 }
 
 void Shop_State::Leave_Shop() {
-    if (!Write_Config()) {
+    if (!Write_Config(shop_filename)) {
         log_error("Failed to write shop config!");
     }
 
     g_game.Pop_State();
 }
 
-bool Shop_State::Read_Config() {
-    std::ifstream init_shop("data/shop_init.json");
-    std::ifstream saved_shop("shop.json");
+bool Shop_State::Read_Config(const char* init_filename, const char* filename) {
+    std::ifstream init_shop(init_filename);
+    std::ifstream saved_shop(filename);
 
     try {
         json data = json::parse(init_shop);
-        log_info("Loading config from data/init.json");
+        log_info("Loading config from '%s'", init_filename);
 
         // Shop Title
         if (data.find("Title") != data.end()) {
@@ -304,7 +307,7 @@ bool Shop_State::Read_Config() {
         json upgrade_list;
         if (saved_shop.is_open()) {
             json conf = json::parse(saved_shop);
-            log_info("Loading upgrades from shop.json");
+            log_info("Loading upgrades from '%s'", filename);
             upgrade_list = conf["Upgrades"];
         } else {
             upgrade_list = data["Upgrades"];
@@ -314,7 +317,7 @@ bool Shop_State::Read_Config() {
         for (int n = 0; n < num_upgrades; n++) {
             json up = upgrade_list[n];
 
-            Upgrade upgrade;
+            Shop_Upgrade upgrade;
             upgrade.name        = up["Name"].get<std::string>();        // required
             upgrade.cost        = up["Cost"].get<int16>();              // required
             upgrade.description = up["Description"].get<std::string>(); // required
@@ -341,12 +344,12 @@ bool Shop_State::Read_Config() {
     return true;
 }
 
-bool Shop_State::Write_Config() {
+bool Shop_State::Write_Config(const char* filename) {
     // try to re-serialze to disk
     try {
         json upgrade_list = json::array();
 
-        for (const Upgrade& upgrade : upgrades) {
+        for (const Shop_Upgrade& upgrade : upgrades) {
             if (upgrade.bought) {
                 continue;
             }
@@ -368,10 +371,10 @@ bool Shop_State::Write_Config() {
             {"Upgrades", upgrade_list}
         };
 
-        std::ofstream fp("shop.json");
+        std::ofstream fp(filename);
         fp << std::setw(2) << data << std::endl;
         fp.close();
-        log_info("Options written to shop.json");
+        log_info("Options written to '%s'", filename);
 
     } catch (json::parse_error e) {
         log_error("Json parse exception: [%s]", e.what());

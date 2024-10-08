@@ -43,8 +43,8 @@ public:
     const Axis_Mapping* GetAxes() const { return &axes; }
 
 private:
-    bool ReadConfig();
-    bool WriteConfig();
+    bool ReadConfig(const char* init_filename, const char* filename);
+    bool WriteConfig(const char* filename);
 
     bool Init();
     bool Shutdown();

@@ -31,13 +31,16 @@ uint32 g_window_pixel_format = 0;
 static const real32 deadzone = 0.5;
 static bool draw_input_debug = false;
 static std::string window_name = "game-app";
+static bool has_save = false;
+static const char* config_init_filename = "data/init/init.json";
+static const char* config_filename = "save/config.json";
 
 Game_App::Game_App() {}
 Game_App::~Game_App() {}
 
 bool Game_App::Init() {
     // read init.json
-    if (!ReadConfig()) {
+    if (!ReadConfig(config_init_filename, config_filename)) {
         log_fatal("Error reading init.json!");
 
 		// End the program
@@ -99,7 +102,7 @@ bool Game_App::Init() {
 }
 
 bool Game_App::Shutdown() {
-    WriteConfig();
+    WriteConfig(config_filename);
 
     // clean up Game_State stack
     while (game_state.size() > 0) {
@@ -183,7 +186,7 @@ bool Game_App::Run() {
     SDL_ShowCursor(SDL_DISABLE);
 
     // Start game in a menu state
-    Game_State* menu = new Menu_State();
+    Game_State* menu = new Menu_State(has_save);
     this->game_state.push(menu);
     //World_State* level1 = new World_State("data/levels/level_1.json");
     //this->Push_New_State(level1);
@@ -678,12 +681,12 @@ void Game_App::Draw_Gamepad() {
         SDL_RenderDrawRect(renderer, &pad);
 }
 
-bool Game_App::ReadConfig() {
-    std::ifstream init_file("data/init.json");
-    std::ifstream opt_file("config.json");
+bool Game_App::ReadConfig(const char* init_filename, const char* filename) {
+    std::ifstream init_file(init_filename);
+    std::ifstream opt_file(filename);
     try {
         json data = json::parse(init_file);
-        log_info("Loading config from data/init.json");
+        log_info("Loading base config from '%s'", init_filename);
 
         // Window Title
         if (data.find("Title") != data.end()) {
@@ -701,7 +704,8 @@ bool Game_App::ReadConfig() {
         // check if config file exists, and if so read options from that.
         if (opt_file.is_open()) {
             json conf = json::parse(opt_file);
-            log_info("Loading options from config.json");
+            log_info("Loading options from '%s'", filename);
+            has_save = true;
 
             // Master_Volume:
             if (conf.find("Options") != conf.end()) {
@@ -745,7 +749,7 @@ bool Game_App::ReadConfig() {
     return true;
 }
 
-bool Game_App::WriteConfig() {
+bool Game_App::WriteConfig(const char* filename) {
     // try to re-serialze to disk
     try {
         json data = {
@@ -755,10 +759,10 @@ bool Game_App::WriteConfig() {
             }}
         };
 
-        std::ofstream fp("config.json");
+        std::ofstream fp(filename);
         fp << std::setw(2) << data << std::endl;
         fp.close();
-        log_info("Options written to config.json");
+        log_info("Options written to '%s'", filename);
 
     } catch (json::parse_error e) {
         log_error("Json parse exception: [%s]", e.what());
