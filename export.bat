@@ -22,6 +22,7 @@ echo %BuildNum% > .\export\version.txt
 set dst_dir=%dst_dir%-%BuildNum%
 if NOT EXIST %dst_dir% mkdir %dst_dir%
 if NOT EXIST %dst_dir%\data mkdir %dst_dir%\data
+if NOT EXIST %dst_dir%\save mkdir %dst_dir%\save
 
 set ver_json={"Version": %BuildNum%}
 echo %ver_json%>%dst_dir%\data\ver.json
