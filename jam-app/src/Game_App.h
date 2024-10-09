@@ -9,16 +9,12 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#include "Save_Data.h"
 #include "Sprite.h"
 #include "Game_Pad.h"
 #include "Mouse.h"
 #include "Game_State.h"
 #include "Input_Mapping.h"
-
-struct Game_Options {
-    int master_volume = 50;
-    int music_volume = 50;
-};
 
 struct Game_App {
 public:
@@ -36,15 +32,22 @@ public:
     SDL_Renderer* GetRenderer() { return renderer; }
     const SDL_Renderer* GetRenderer() const { return renderer; }
 
-    Game_Options& Get_Options() { return options; }
-    const Game_Options& Get_Options() const { return options; }
+    Sys_Config_Data& Get_Config() { return sys_config; }
+    const Sys_Config_Data& Get_Config() const { return sys_config; }
+
+    Game_Save_Data& Get_Save_Data() { return save_data; }
+    const Game_Save_Data& Get_Save_Data() const { return save_data; }
+    void Reset_Save_Data();
 
     const Game_Pad* GetGamePad() const { return &gamepad; }
     const Axis_Mapping* GetAxes() const { return &axes; }
 
 private:
-    bool ReadConfig(const char* init_filename, const char* filename);
-    bool WriteConfig(const char* filename);
+    bool Read_Config(const char* config_filename);
+    bool Write_Config(const char* config_filename) const;
+
+    bool Read_Save_Data(const char* save_filename);
+    bool Write_Save_Data(const char* save_filename) const;
 
     bool Init();
     bool Shutdown();
@@ -59,7 +62,8 @@ private:
 
 private:
     int32 version_number;
-    Game_Options options;
+    Sys_Config_Data sys_config;
+    Game_Save_Data save_data;
 
     // Pointers to our window and renderer
 	SDL_Window* window = NULL;

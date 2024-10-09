@@ -133,19 +133,20 @@ bool Menu_State::On_Action_Event(Action_Event action) {
 
         switch (curr.action) {
             case MenuAction_Play: { // Play
-                Game_State* play = new World_State("data/levels/level_1.json");
+                Game_State* play = new World_State(true);
                 g_game.Push_New_State(play);
                 break;
             };
 
             case MenuAction_Continue: { // Continue
-                Game_State* play = new World_State("data/levels/level_1.json");
+                Game_State* play = new World_State(false);
                 g_game.Push_New_State(play);
                 break;
             };
 
             case MenuAction_NewGame: { // New Game
-                Game_State* play = new World_State("data/levels/level_1.json");
+                g_game.Reset_Save_Data();
+                Game_State* play = new World_State(true);
                 g_game.Push_New_State(play);
                 break;
             };

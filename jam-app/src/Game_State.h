@@ -100,15 +100,13 @@ struct Shop_Handover {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct World_State : public Game_State {
-    World_State(const char* filename);
+    World_State(bool new_game);
     virtual ~World_State() override;
 
     virtual void Update_And_Render(SDL_Renderer* renderer, real32 dt) override;
     virtual bool On_Action_Event(Action_Event action) override;
 
 private:
-    bool Read_Config(const char* init_filename, const char* filename);
-    bool Write_Config(const char* filename);
     uint8 Move_Entity(int16 start_x, int16 start_y, int16 move_x, int16 move_y);
     uint8 Break_Block(int16 world_x, int16 world_y);
 
@@ -153,7 +151,6 @@ private:
 
     // debug
     bool show_debug;
-    std::string level_name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

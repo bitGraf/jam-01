@@ -9,7 +9,7 @@
 extern Game_App g_game;
 
 int main(int argc, char** argv) {
-    start_logging(LOG_LEVEL_ENUM::LOG_LEVEL_DEBUG);
+    start_logging(LOG_LEVEL_ENUM::LOG_LEVEL_TRACE);
 
     if (!g_game.Run()) {
         log_error("Game_App failed on Run().");

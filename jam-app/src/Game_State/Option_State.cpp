@@ -55,10 +55,10 @@ void Option_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
         char buffer[1024];
         if (n == 0) {
             text = buffer;
-            snprintf(buffer, 1024, "Master Volume: %d", g_game.Get_Options().master_volume);
+            snprintf(buffer, 1024, "Master Volume: %d", g_game.Get_Config().master_volume);
         } else if (n == 1) {
             text = buffer;
-            snprintf(buffer, 1024, "Music Volume: %d", g_game.Get_Options().music_volume);
+            snprintf(buffer, 1024, "Music Volume: %d", g_game.Get_Config().music_volume);
         }
 
         Render_Text(renderer, g_large_font, back_color, rect, text);
@@ -107,22 +107,22 @@ bool Option_State::On_Action_Event(Action_Event action) {
 
         switch (item.action) {
             case OptionAction_MasterVolume: { // Master Volume
-                g_game.Get_Options().master_volume -= 5;
-                if (g_game.Get_Options().master_volume <= 0) {
-                    g_game.Get_Options().master_volume = 0;
+                g_game.Get_Config().master_volume -= 5;
+                if (g_game.Get_Config().master_volume <= 0) {
+                    g_game.Get_Config().master_volume = 0;
                 }
                 
-                g_game.Update_Volume(g_game.Get_Options().master_volume, g_game.Get_Options().music_volume);
+                g_game.Update_Volume(g_game.Get_Config().master_volume, g_game.Get_Config().music_volume);
                 break;
             };
 
             case OptionAction_MusicVolume: { // Music Volume
-                g_game.Get_Options().music_volume -= 5;
-                if (g_game.Get_Options().music_volume <= 0) {
-                    g_game.Get_Options().music_volume = 0;
+                g_game.Get_Config().music_volume -= 5;
+                if (g_game.Get_Config().music_volume <= 0) {
+                    g_game.Get_Config().music_volume = 0;
                 }
                 
-                g_game.Update_Volume(g_game.Get_Options().master_volume, g_game.Get_Options().music_volume);
+                g_game.Update_Volume(g_game.Get_Config().master_volume, g_game.Get_Config().music_volume);
                 break;
             };
         }
@@ -133,22 +133,22 @@ bool Option_State::On_Action_Event(Action_Event action) {
 
         switch (item.action) {
             case OptionAction_MasterVolume: { // Master Volume
-                g_game.Get_Options().master_volume += 5;
-                if (g_game.Get_Options().master_volume >= 100) {
-                    g_game.Get_Options().master_volume = 100;
+                g_game.Get_Config().master_volume += 5;
+                if (g_game.Get_Config().master_volume >= 100) {
+                    g_game.Get_Config().master_volume = 100;
                 }
 
-                g_game.Update_Volume(g_game.Get_Options().master_volume, g_game.Get_Options().music_volume);
+                g_game.Update_Volume(g_game.Get_Config().master_volume, g_game.Get_Config().music_volume);
                 break;
             };
 
             case OptionAction_MusicVolume: { // Music Volume
-                g_game.Get_Options().music_volume += 5;
-                if (g_game.Get_Options().music_volume >= 100) {
-                    g_game.Get_Options().music_volume = 100;
+                g_game.Get_Config().music_volume += 5;
+                if (g_game.Get_Config().music_volume >= 100) {
+                    g_game.Get_Config().music_volume = 100;
                 }
 
-                g_game.Update_Volume(g_game.Get_Options().master_volume, g_game.Get_Options().music_volume);
+                g_game.Update_Volume(g_game.Get_Config().master_volume, g_game.Get_Config().music_volume);
                 break;
             };
         }

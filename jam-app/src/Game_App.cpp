@@ -30,18 +30,25 @@ uint32 g_window_pixel_format = 0;
 // local vars
 static const real32 deadzone = 0.5;
 static bool draw_input_debug = false;
-static std::string window_name = "game-app";
 static bool has_save = false;
-static const char* config_init_filename = "data/init/init.json";
-static const char* config_filename = "save/config.json";
+static const char* s_config_filename = "save/config.json";
+static const char* s_save_filename = "save/save.json";
 
 Game_App::Game_App() {}
 Game_App::~Game_App() {}
 
 bool Game_App::Init() {
     // read init.json
-    if (!ReadConfig(config_init_filename, config_filename)) {
-        log_fatal("Error reading init.json!");
+    if (!Read_Config(s_config_filename)) {
+        log_fatal("Error reading system config '%s'", s_config_filename);
+
+		// End the program
+		return false;
+    }
+
+    // load save_data if there
+    if (!Read_Save_Data(s_save_filename)) {
+        log_fatal("Error loading save data '%s'!", s_save_filename);
 
 		// End the program
 		return false;
@@ -72,7 +79,7 @@ bool Game_App::Init() {
     }
 
     // Create our window
-	window = SDL_CreateWindow( window_name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, g_window_width, g_window_height, SDL_WINDOW_SHOWN );
+	window = SDL_CreateWindow( sys_config.window_title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, g_window_width, g_window_height, SDL_WINDOW_SHOWN );
     g_window_pixel_format = SDL_GetWindowPixelFormat(window);
 
 	// Make sure creating the window succeeded
@@ -94,7 +101,7 @@ bool Game_App::Init() {
     }
 
     gamepad.Set_Deadzones(deadzone, deadzone, deadzone, deadzone);
-    Update_Volume(options.master_volume, options.music_volume);
+    Update_Volume(sys_config.master_volume, sys_config.music_volume);
 
     log_info("SDL up and running!");
 
@@ -102,7 +109,8 @@ bool Game_App::Init() {
 }
 
 bool Game_App::Shutdown() {
-    WriteConfig(config_filename);
+    Write_Save_Data(s_save_filename);
+    Write_Config(s_config_filename);
 
     // clean up Game_State stack
     while (game_state.size() > 0) {
@@ -188,7 +196,7 @@ bool Game_App::Run() {
     // Start game in a menu state
     Game_State* menu = new Menu_State(has_save);
     this->game_state.push(menu);
-    //World_State* level1 = new World_State("data/levels/level_1.json");
+    //World_State* level1 = new World_State(true);
     //this->Push_New_State(level1);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -681,58 +689,11 @@ void Game_App::Draw_Gamepad() {
         SDL_RenderDrawRect(renderer, &pad);
 }
 
-bool Game_App::ReadConfig(const char* init_filename, const char* filename) {
-    std::ifstream init_file(init_filename);
-    std::ifstream opt_file(filename);
-    try {
-        json data = json::parse(init_file);
-        log_info("Loading base config from '%s'", init_filename);
-
-        // Window Title
-        if (data.find("Title") != data.end()) {
-            window_name = data["Title"].get<std::string>();
-        }
-        
-        // if not find width or height, use deafault
-        if (data.find("Window_Width") != data.end()) {
-            g_window_width = data["Window_Width"].get<int32>();
-        }
-        if (data.find("Window_Height") != data.end()) {
-            g_window_height = data["Window_Height"].get<int32>();
-        }
-
-        // check if config file exists, and if so read options from that.
-        if (opt_file.is_open()) {
-            json conf = json::parse(opt_file);
-            log_info("Loading options from '%s'", filename);
-            has_save = true;
-
-            // Master_Volume:
-            if (conf.find("Options") != conf.end()) {
-
-                json opt = conf["Options"];
-                if (opt.find("Master_Volume") != opt.end()) {
-                    options.master_volume = opt["Master_Volume"].get<int32>();
-                } else if (data.find("Master_Volume") != data.end()) {
-                    options.master_volume = data["Master_Volume"].get<int32>();
-                }
-
-                if (opt.find("Music_Volume") != opt.end()) {
-                    options.music_volume = opt["Music_Volume"].get<int32>();
-                } else if (data.find("Music_Volume") != data.end()) {
-                    options.music_volume = data["Music_Volume"].get<int32>();
-                }
-            }
-        }
-    } catch (json::parse_error e) {
-        log_error("Json parse exception: [%s]", e.what());
-        return false;
-    } catch (json::type_error e) {
-        log_error("Json type exception: [%s]", e.what());
-        return false;
-    } catch (json::other_error e) {
-        log_error("Json other exception: [%s]", e.what());
-        return false;
+bool Game_App::Read_Config(const char* config_filename) {
+    if (!sys_config.Serialize_From_Json(config_filename)) {
+        log_debug("Using default configuration");
+    } else {
+        log_debug("'%s' loaded succesfully", config_filename);
     }
 
     // check if ver.json exists
@@ -749,31 +710,27 @@ bool Game_App::ReadConfig(const char* init_filename, const char* filename) {
     return true;
 }
 
-bool Game_App::WriteConfig(const char* filename) {
-    // try to re-serialze to disk
-    try {
-        json data = {
-            {"Options", {
-                {"Master_Volume", options.master_volume},
-                {"Music_Volume",  options.music_volume}
-            }}
-        };
+bool Game_App::Write_Config(const char* save_filename) const {
+    return sys_config.Serialize_To_Json(save_filename);
+}
 
-        std::ofstream fp(filename);
-        fp << std::setw(2) << data << std::endl;
-        fp.close();
-        log_info("Options written to '%s'", filename);
 
-    } catch (json::parse_error e) {
-        log_error("Json parse exception: [%s]", e.what());
-        return false;
-    } catch (json::type_error e) {
-        log_error("Json type exception: [%s]", e.what());
-        return false;
-    } catch (json::other_error e) {
-        log_error("Json other exception: [%s]", e.what());
-        return false;
+bool Game_App::Read_Save_Data(const char* load_filename) {
+    if (!save_data.Serialize_From_Json(load_filename)) {
+        log_debug("No save data found.");
+    } else {
+        log_debug("Save data loaded succesfully.");
+        has_save = true;
     }
 
     return true;
+}
+
+bool Game_App::Write_Save_Data(const char* save_filename) const {
+    return save_data.Serialize_To_Json(save_filename);
+}
+
+void Game_App::Reset_Save_Data() {
+    Game_Save_Data new_save_data;
+    this->save_data = new_save_data;
 }

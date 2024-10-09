@@ -62,15 +62,11 @@ enum Tileset_Types {
     Type_Shop_Entrance      = 15,
 };
 
-World_State::World_State(const char* filename) 
+World_State::World_State(bool new_game) 
  : handover(colony_food, dig_speed, dig_strength, extraction, abilities)
 {
-    log_trace("World_State::World_State(%s)", filename);
-    level_name = filename;
-
-    if (!Read_Config(world_init_filename, world_filename)) {
-        log_error("Failed to load world config!");
-    }
+    // get save data from game_app
+    const Game_Save_Data& save_data = g_game.Get_Save_Data();
 
     ground_level = 8;
     spawn_x = 13;
@@ -169,7 +165,7 @@ World_State::World_State(const char* filename)
     break_cost = 0.01;
     colony_hunger = 0.0;
     carrying_food = 0;
-    colony_food = 1000;
+    colony_food = save_data.Food;
     colony_size = 5;
     field_eat_ratio = 0.25;
     colony_eat_ratio = 1.0;
@@ -178,11 +174,7 @@ World_State::World_State(const char* filename)
 }
 
 World_State::~World_State() {
-    if (!Write_Config(world_filename)) {
-        log_error("Failed to write world save!");
-    }
-
-    log_trace("World_State::~World_State(%s)", level_name.c_str());
+    log_trace("World_State::~World_State()");
 }
 
 void World_State::Update_And_Render(SDL_Renderer* renderer, real32 dt) {
@@ -593,59 +585,4 @@ void World_State::Death() {
     player.angle = 90.0;
     this->player.sprite.Set_Sequence(2, 0);
     Next_Day();
-}
-
-
-bool World_State::Read_Config(const char* init_filename, const char* filename) {
-    std::ifstream init_world(init_filename);
-    std::ifstream saved_world(filename);
-
-    try {
-        json data = json::parse(init_world);
-        log_info("Loading world config from '%s'", init_filename);
-
-        // check if save file exists, and if so read options from that.
-        if (saved_world.is_open()) {
-            json saved = json::parse(saved_world);
-            log_info("Loading world save from '%s'", filename);
-        }
-
-    } catch (json::parse_error e) {
-        log_error("Json parse exception: [%s]", e.what());
-        return false;
-    } catch (json::type_error e) {
-        log_error("Json type exception: [%s]", e.what());
-        return false;
-    } catch (json::other_error e) {
-        log_error("Json other exception: [%s]", e.what());
-        return false;
-    }
-
-    return true;
-}
-
-bool World_State::Write_Config(const char* filename) {
-    // try to re-serialze to disk
-    try {
-        json data = {
-            {"placeholder", 0}
-        };
-
-        std::ofstream fp(filename);
-        fp << std::setw(2) << data << std::endl;
-        fp.close();
-        log_info("World Save written to '%s'", filename);
-
-    } catch (json::parse_error e) {
-        log_error("Json parse exception: [%s]", e.what());
-        return false;
-    } catch (json::type_error e) {
-        log_error("Json type exception: [%s]", e.what());
-        return false;
-    } catch (json::other_error e) {
-        log_error("Json other exception: [%s]", e.what());
-        return false;
-    }
-
-    return true;
 }
